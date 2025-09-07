@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import jsPDF from 'jspdf'
+import { calcularGlobal } from "./engine/engine.js";
+<button onClick={testSafire}>Probar Safire v0.4</button>
 
 // ———————————————————————————————————————————————
 // Catálogo base de materiales
@@ -196,6 +198,36 @@ export default function App(){
     else if (overPctTotal > 20) setDiagnosis('Posible sobrevaloración')
     else setDiagnosis('Precio razonable')
   },[priceP, totalCost, overPctTotal])
+const testSafire = async () => {
+  // 1) Cargar presets
+  const cfg = await fetch("./src/engine/safire_config_v0_4.json").then(r => r.json());
+
+  // 2) Precios provisionales (cámbialos si ya los pides en tu UI)
+  const px = {
+    currency: "EUR",
+    metalPrice_eur_per_g: { oro_18k: 45, plata_925: 0.8, platino: 30, acero: 0.1 },
+    stonePrice_eur_per_ct: { diamante_default: 5000 }
+  };
+
+  // 3) Ejemplo mínimo (un anillo) solo para validar el motor
+  const lineas = [{
+    categoria: "anillo", marca: "Cartier",
+    metal: { tipo: "oro", ley: "Au750" },
+    // Si no tienes peso real, usamos preset (modo básico)
+    preset: { key: "anillo_18k_talla_media", talla: "medio", k: "macizo" },
+    // Si no tienes ct, puedes usar diámetro (mm) y el motor estima ct
+    piedras: [{ tipo: "diamante", diametro_mm: 5.0, cantidad: 1 }],
+    extras: { engasteTipo: "garra", acabadoId: "rodio_blanco" },
+    precioVenta_eur: 1850
+  }];
+
+  // 4) Llamada al motor
+  const out = calcularGlobal(lineas, cfg, px);
+
+  // 5) Verificación rápida
+  console.log("Safire ▶", out);
+  alert(`Diagnóstico: ${out.diagnostico.badge} | Media: €${out.estimacion.media_eur.toFixed(0)}`);
+};
 
   // Validaciones
   const alerts = []
