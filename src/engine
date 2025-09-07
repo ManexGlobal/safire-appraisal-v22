@@ -1,0 +1,209 @@
+// Safire Engine — Sprint 1 v0.1 (ES Module, JS)
+// Core calculation engine — no build step required.
+
+const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+export function ctToGrams(ct, cfg) {
+  return ct * ((cfg?.presets?.gem_utils?.ct_to_g) ?? 0.20);
+}
+
+export function diametroToCt(diametro_mm, cfg) {
+  const table = cfg.presets.diamante_mm_to_ct || {};
+  const keys = Object.keys(table).map(parseFloat).sort((a,b)=>a-b);
+  if (!keys.length) return 0;
+  if (diametro_mm <= keys[0]) return table[keys[0].toFixed(1)];
+  if (diametro_mm >= keys[keys.length-1]) return table[keys[keys.length-1].toFixed(1)];
+  for (let i=0;i<keys.length-1;i++){
+    const a = keys[i], b = keys[i+1];
+    if (diametro_mm >= a && diametro_mm <= b){
+      const va = table[a.toFixed(1)], vb = table[b.toFixed(1)];
+      const t = (diametro_mm - a) / (b - a);
+      return va + t * (vb - va);
+    }
+  }
+  return 0;
+}
+
+function isHeritageBrand(marca){
+  const list = ['cartier','tiffany','rolex','patek','audemars','vacheron','bvlgari','van cleef'];
+  return (marca||'').toLowerCase && list.some(m => marca.toLowerCase().includes(m));
+}
+function isFashionBrand(marca){
+  const list = ['pandora','swarovski','guess','fossil','mk','michael kors'];
+  return (marca||'').toLowerCase && list.some(m => marca.toLowerCase().includes(m));
+}
+
+export function estimarPesoMetal(linea, cfg){
+  if (typeof linea.pesoMetal_g === 'number' && linea.pesoMetal_g > 0) {
+    return { peso_g: linea.pesoMetal_g, estimated: false };
+  }
+  const p = linea.preset || {};
+  if (!p.key) return { peso_g: 0, estimated: true };
+
+  let peso_g = 0;
+
+  switch (p.key) {
+    case 'anillo_18k_talla_media': {
+      const band = cfg.presets.presets_peso.anillo_18k_talla_media;
+      if (p.talla === 'fino') peso_g = (band.fino_g_min + band.fino_g_max)/2;
+      else if (p.talla === 'medio') peso_g = (band.medio_g_min + band.medio_g_max)/2;
+      else if (p.talla === 'ancho') peso_g = (band.ancho_g_min + band.ancho_g_max)/2;
+      else peso_g = (band.medio_g_min + band.medio_g_max)/2;
+      peso_g *= p.k ? band.k_factor[p.k] : 1;
+      break;
+    }
+    case 'pulsera_18k_18_19cm': {
+      const b = cfg.presets.presets_peso.pulsera_18k_18_19cm;
+      if (p.talla === 'fina') peso_g = (b.fina_g_min + b.fina_g_max)/2;
+      else if (p.talla === 'media') peso_g = (b.media_g_min + b.media_g_max)/2;
+      else if (p.talla === 'gruesa') peso_g = (b.gruesa_g_min + b.gruesa_g_max)/2;
+      else peso_g = (b.media_g_min + b.media_g_max)/2;
+      peso_g *= p.k ? b.k_factor[p.k] : 1;
+      break;
+    }
+    case 'collar_18k_45cm': {
+      const c = cfg.presets.presets_peso.collar_18k_45cm;
+      if (p.talla === 'fino') peso_g = (c.fino_g_min + c.fino_g_max)/2;
+      else if (p.talla === 'media') peso_g = (c.medio_g_min + c.medio_g_max)/2;
+      else if (p.talla === 'gruesa') peso_g = (c.grueso_g_min + c.grueso_g_max)/2;
+      else peso_g = (c.medio_g_min + c.medio_g_max)/2;
+      if (typeof p.longitud_cm === 'number' && p.longitud_cm > 0) {
+        const delta_cm = p.longitud_cm - 45;
+        const steps = delta_cm / 5;
+        peso_g *= (1 + steps * c.ajuste_longitud_por_5cm_pct);
+      }
+      break;
+    }
+    case 'pendientes': {
+      const e = cfg.presets.presets_peso.pendientes;
+      peso_g = (e.stud_montura_g_min + e.stud_montura_g_max)/2;
+      break;
+    }
+    case 'reloj_caja': {
+      const r = cfg.presets.presets_peso.reloj_caja;
+      const d = p.diametro_mm || 40;
+      if (d <= 38) peso_g = (r.acero_36_38mm_g_min + r.acero_36_38mm_g_max)/2;
+      else peso_g = (r.acero_40_41mm_g_min + r.acero_40_41mm_g_max)/2;
+      break;
+    }
+  }
+  return { peso_g, estimated: true };
+}
+
+export function costeMaterialesEUR(linea, cfg, px){
+  const flags = [];
+  const { peso_g, estimated } = estimarPesoMetal(linea, cfg);
+  if (estimated) flags.push('peso_metal');
+
+  const metal = linea.metal?.tipo;
+  let eur_g = 0;
+  if (metal === 'oro') eur_g = px?.metalPrice_eur_per_g?.oro_18k ?? 45;
+  else if (metal === 'plata') eur_g = px?.metalPrice_eur_per_g?.plata_925 ?? 0.8;
+  else if (metal === 'platino') eur_g = px?.metalPrice_eur_per_g?.platino ?? 30;
+  else if (metal === 'acero') eur_g = px?.metalPrice_eur_per_g?.acero ?? 0.1;
+
+  return { eur: peso_g * eur_g, flags };
+}
+
+export function costePiedrasEUR(linea, cfg, px){
+  let total = 0; const flags = [];
+  (linea.piedras || []).forEach(p => {
+    let ct = p.quilates ?? 0;
+    if (!p.quilates && p.diametro_mm && p.tipo === 'diamante') {
+      ct = diametroToCt(p.diametro_mm, cfg);
+      flags.push('ct_estimado_por_mm');
+    }
+    const n = p.cantidad ?? 1;
+    let eur_ct = 0;
+    if (p.tipo === 'diamante') eur_ct = px?.stonePrice_eur_per_ct?.diamante_default ?? 5000;
+    else if (p.tipo === 'zafiro') eur_ct = px?.stonePrice_eur_per_ct?.zafiro_default ?? 800;
+    else if (p.tipo === 'esmeralda') eur_ct = px?.stonePrice_eur_per_ct?.esmeralda_default ?? 1500;
+    else if (p.tipo === 'rubí') eur_ct = px?.stonePrice_eur_per_ct?.['rubí_default'] ?? 1200;
+    else eur_ct = px?.stonePrice_eur_per_ct?.otra ?? 300;
+
+    total += (ct * eur_ct) * n;
+  });
+  return { eur: total, flags };
+}
+
+export function costeAcabadoEUR(linea, cfg, costeMateriales_eur){
+  const pol = cfg.presets.acabados.cost_policy;
+  const fijo = (pol.absolute_eur_by_categoria?.[linea.categoria]) ?? 0;
+  const tope = costeMateriales_eur * (pol.cap_pct_of_materials ?? 0);
+  const coste = Math.min(fijo, tope > 0 ? tope : Infinity);
+  return Number.isFinite(coste) ? coste : fijo;
+}
+
+export function costeExtrasEUR(linea, cfg, baseMateriales_eur){
+  const extras = linea.extras || {};
+  const pctBasico = (cfg.presets.costes_extras_basico_pct_por_categoria?.[linea.categoria]) ?? 0.22;
+  const mo = typeof extras.manoObra_eur === 'number' ? extras.manoObra_eur : baseMateriales_eur * pctBasico;
+  const eng = extras.engasteTipo ? (cfg.presets.engaste_coef_mano_obra?.[extras.engasteTipo] || 1) : 1;
+  const moAjustada = mo * eng;
+  const acabado = extras.acabadoId ? costeAcabadoEUR(linea, cfg, baseMateriales_eur) : 0;
+  const otros = extras.extras_eur ?? 0;
+  return moAjustada + acabado + otros;
+}
+
+export function calcularLinea(linea, cfg, px){
+  const m = costeMaterialesEUR(linea, cfg, px);
+  const p = costePiedrasEUR(linea, cfg, px);
+  const extras = costeExtrasEUR(linea, cfg, m.eur + p.eur);
+  const coste_total = m.eur + p.eur + extras;
+
+  const pv = linea.precioVenta_eur;
+  const margen_abs = pv - coste_total;
+  const margen_pct = pv > 0 ? clamp(margen_abs / pv, -10, 10) : 0;
+
+  return {
+    coste_materiales_eur: m.eur,
+    coste_piedras_eur: p.eur,
+    coste_extras_eur: extras,
+    coste_total_eur: coste_total,
+    margen_abs_eur: margen_abs,
+    margen_pct,
+    flags_estimada: [...m.flags, ...p.flags]
+  };
+}
+
+const rangoPctPorCategoriaDefault = { anillo:0.10, pulsera:0.12, collar:0.12, pendiente:0.10, reloj_caja:0.15 };
+
+export function diagnosticar(r, categoria, marca, cfg){
+  const base = cfg.umbrales_diagnostico_v0_3.base_por_categoria[categoria];
+  let up = base.sobrevalorado_min_r;
+  if (isHeritageBrand(marca)) up += cfg.umbrales_diagnostico_v0_3.ajuste_por_marca.heritage_lujo_add_tope_superior;
+  if (isFashionBrand(marca)) up += cfg.umbrales_diagnostico_v0_3.ajuste_por_marca.fashion_minus_tope_superior;
+  if (r <= base.oportunidad_max_r) return 'oportunidad';
+  if (r >= up) return 'sobrevalorado';
+  return 'justo';
+}
+
+export function calcularGlobal(lineas, cfg, px, opts={}){
+  const resLineas = lineas.map(l => calcularLinea(l, cfg, px));
+  const totals = resLineas.reduce((acc, r, i) => {
+    acc.coste_materiales_eur += r.coste_materiales_eur;
+    acc.coste_piedras_eur += r.coste_piedras_eur;
+    acc.coste_extras_eur += r.coste_extras_eur;
+    acc.coste_total_eur += r.coste_total_eur;
+    acc.precio_venta_total_eur += lineas[i].precioVenta_eur;
+    return acc;
+  }, { coste_materiales_eur:0, coste_piedras_eur:0, coste_extras_eur:0, coste_total_eur:0, precio_venta_total_eur:0 });
+
+  const media = totals.coste_total_eur;
+  const catDom = lineas[0]?.categoria || 'anillo';
+  const rpct = (opts.rangoPct?.[catDom]) ?? rangoPctPorCategoriaDefault[catDom];
+  const min = media * (1 - rpct);
+  const max = media * (1 + rpct);
+
+  const r = totals.precio_venta_total_eur > 0 ? (totals.precio_venta_total_eur - media) / totals.precio_venta_total_eur : 0;
+  const marcaDom = lineas[0]?.marca || '';
+  const badge = diagnosticar(r, catDom, marcaDom, cfg);
+
+  return {
+    lineas: resLineas,
+    totales: { ...totals, margen_abs_eur: totals.precio_venta_total_eur - totals.coste_total_eur, margen_pct: totals.precio_venta_total_eur > 0 ? (totals.precio_venta_total_eur - totals.coste_total_eur) / totals.coste_total_eur : 0 },
+    estimacion: { media_eur: media, min_eur: min, max_eur: max },
+    diagnostico: { badge, r },
+    metadata: { categoria: lineas.map(l=>l.categoria), marca: lineas.map(l=>l.marca), flags_estimada: Array.from(new Set(resLineas.flatMap(l => l.flags_estimada))) }
+  };
+}
