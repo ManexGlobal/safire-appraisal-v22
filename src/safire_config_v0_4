@@ -1,0 +1,112 @@
+{
+  "version": "v0.4",
+  "generated_at": "2025-09-07T00:00:00Z",
+  "presets": {
+    "densidades_g_cm3": {
+      "oro_24k": 19.32,
+      "oro_18k": 15.6,
+      "plata_925": 10.4,
+      "platino": 21.45,
+      "acero": 8.0
+    },
+    "material_leyes": ["Ag925", "Au375", "Au583", "Au750"],
+    "acabados": {
+      "items": [
+        { "id": "rodio_blanco", "espesor_micras": 0.1, "nota": "mantenimiento periodico" },
+        { "id": "oro_18k_amarillo_bano", "espesor_micras": 3 },
+        { "id": "oro_18k_rosa_bano", "espesor_micras": 3 },
+        { "id": "rodio_negro", "espesor_micras": 0.1 }
+      ],
+      "cost_policy": {
+        "type": "absolute_with_cap_pct_of_materials",
+        "absolute_eur_by_categoria": {
+          "anillo": 15,
+          "pulsera": 18,
+          "collar": 20,
+          "pendiente": 12,
+          "reloj_caja": 25
+        },
+        "cap_pct_of_materials": 0.02
+      }
+    },
+    "engaste_coef_mano_obra": {
+      "garra": 1,
+      "grano": 1.1,
+      "carril": 1.15,
+      "bisel": 1.2,
+      "a_nivel": 1.25,
+      "taladrada": 1.3
+    },
+    "pendiente_tipos": ["dormilona", "criolla", "ear_cuff", "ear_crawler", "ear_jacket"],
+    "cierre_tipos": {
+      "mariposa": { "seguridad": "media", "mo_coef": 1 },
+      "bola_roscada": { "seguridad": "alta", "mo_coef": 1.1 },
+      "tubo": { "seguridad": "alta", "mo_coef": 1.15 },
+      "invisible": { "seguridad": "media-alta", "mo_coef": 1.12 }
+    },
+    "gem_utils": { "ct_to_g": 0.2, "cut_quality_default": "VG-EX", "cert_check_threshold_ct": 0.3 },
+    "diamante_mm_to_ct": { "4.1": 0.25, "4.5": 0.35, "5.0": 0.5, "5.2": 0.6, "5.7": 0.75, "6.5": 1 },
+    "presets_peso": {
+      "anillo_18k_talla_media": {
+        "fino_g_min": 2.2,
+        "fino_g_max": 3,
+        "medio_g_min": 3.6,
+        "medio_g_max": 5.6,
+        "ancho_g_min": 6.6,
+        "ancho_g_max": 9.2,
+        "k_factor": { "macizo": 1, "semi_hueco": 0.75, "hueco": 0.6 }
+      },
+      "pulsera_18k_18_19cm": {
+        "fina_g_min": 5,
+        "fina_g_max": 8,
+        "media_g_min": 10,
+        "media_g_max": 15,
+        "gruesa_g_min": 18,
+        "gruesa_g_max": 32,
+        "k_factor": { "macizo": 1, "semi_hueco": 0.85, "hueco": 0.6 }
+      },
+      "collar_18k_45cm": {
+        "fino_g_min": 10,
+        "fino_g_max": 14,
+        "medio_g_min": 18,
+        "medio_g_max": 26,
+        "grueso_g_min": 28,
+        "grueso_g_max": 40,
+        "ajuste_longitud_por_5cm_pct": 0.1
+      },
+      "pendientes": { "stud_montura_g_min": 0.15, "stud_montura_g_max": 0.35 },
+      "reloj_caja": {
+        "acero_36_38mm_g_min": 35,
+        "acero_36_38mm_g_max": 55,
+        "acero_40_41mm_g_min": 60,
+        "acero_40_41mm_g_max": 80,
+        "oro_36_38mm_g_min": 65,
+        "oro_36_38mm_g_max": 95,
+        "oro_40_41mm_g_min": 95,
+        "oro_40_41mm_g_max": 130
+      }
+    },
+    "costes_extras_basico_pct_por_categoria": {
+      "anillo": 0.25,
+      "pulsera": 0.22,
+      "collar": 0.22,
+      "pendiente": 0.2,
+      "reloj_caja": 0.28
+    }
+  },
+  "umbrales_diagnostico_v0_3": {
+    "base_por_categoria": {
+      "anillo": { "oportunidad_max_r": 0.22, "justo_min_r": 0.22, "justo_max_r": 0.38, "sobrevalorado_min_r": 0.38 },
+      "pulsera": { "oportunidad_max_r": 0.24, "justo_min_r": 0.24, "justo_max_r": 0.4, "sobrevalorado_min_r": 0.4 },
+      "collar": { "oportunidad_max_r": 0.26, "justo_min_r": 0.26, "justo_max_r": 0.42, "sobrevalorado_min_r": 0.42 },
+      "pendiente": { "oportunidad_max_r": 0.24, "justo_min_r": 0.24, "justo_max_r": 0.4, "sobrevalorado_min_r": 0.4 },
+      "reloj_caja": { "oportunidad_max_r": 0.28, "justo_min_r": 0.28, "justo_max_r": 0.48, "sobrevalorado_min_r": 0.48 }
+    },
+    "ajuste_por_marca": { "heritage_lujo_add_tope_superior": 0.05, "fashion_minus_tope_superior": -0.03 }
+  },
+  "tooltips": {
+    "leyes": "Au750 = 18k (750/1000 partes oro).",
+    "acabados": "Rodinado (~0,10 μm) o baño (~3 μm) con impacto mínimo; tope 2% del coste de materiales.",
+    "fallback": "¿No tienes todos los datos? Completa los que conozcas; el resto se estima con valores estándar."
+  }
+}
