@@ -253,6 +253,28 @@
         border-radius: 999px;
         border: 1px dashed #ffb347;
         color: #ffb347;
+        margin-left: 0.25rem;
+      }
+
+      .ai-panel textarea {
+        width: 100%;
+        min-height: 80px;
+        resize: vertical;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        padding: 0.35rem 0.45rem;
+        background: rgba(10, 15, 25, 0.9);
+        color: #f5f5f5;
+        font-size: 0.8rem;
+        box-sizing: border-box;
+      }
+
+      .ai-panel {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px dashed rgba(255, 255, 255, 0.12);
       }
 
       /* Modal simple para cálculo por dimensiones */
@@ -329,8 +351,8 @@
               <button data-mode="advanced">Modo avanzado</button>
             </div>
             <span class="hint">
-              En ambos modos puedes añadir los materiales que quieras; el
-              avanzado está pensado para control más fino.
+              En ambos modos puedes añadir los materiales que quieras. El
+              avanzado añade mano de obra y herramientas técnicas.
             </span>
           </div>
         </div>
@@ -355,8 +377,18 @@
             Plantilla rápida:&nbsp;
             <select id="templateSelect">
               <option value="">— Vacía —</option>
-              <option value="solitario">Solitario oro + diamante</option>
-              <option value="alianza">Alianza oro</option>
+              <option value="solitario_ligero">
+                Solitario ligero (3.5 g oro + 0.20 ct)
+              </option>
+              <option value="solitario_potente">
+                Solitario potente (4.5 g oro + 0.35 ct)
+              </option>
+              <option value="alianza_fina">Alianza fina (3.0 g)</option>
+              <option value="alianza_ancha">Alianza ancha (6.0 g)</option>
+              <option value="cadena_fina">Cadena fina 45 cm (6.0 g)</option>
+              <option value="cadena_gruesa">
+                Cadena gruesa 60 cm (15.0 g)
+              </option>
               <option value="reloj_acero">Reloj acero + zafiro</option>
             </select>
           </label>
@@ -392,31 +424,43 @@
         </div>
       </div>
 
+      <!-- Sección mano de obra (solo avanzado) -->
+      <div
+        id="laborSection"
+        class="row"
+        style="margin-top: 0.75rem; display: none;"
+      >
+        <span class="hint">
+          Mano de obra (solo avanzado): añade un coste global de trabajo,
+          engastado, acabados, etc.
+        </span>
+        <label class="hint">
+          Mano de obra estimada (en divisa):
+          <input
+            id="laborCostInput"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+          />
+        </label>
+        <button class="btn btn-ghost" id="addLaborBtn">
+          + Añadir línea de mano de obra
+        </button>
+      </div>
+
       <!-- Tabla principal -->
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th title="Nombre comercial del componente">Material</th>
-              <th title="Metal / piedra / otro">Tipo</th>
-              <th title="Unidad de coste (metal: €/g, piedra: €/ct, etc.)">
-                Unidad
-              </th>
-              <th title="Peso en la unidad seleccionada (g, ct, ud...)">Peso</th>
-              <th title="Coste por unidad de peso">Coste unit.</th>
-              <th title="Coste total del material">Coste total</th>
-              <th title="Precio de venta imputado a este material/línea">
-                Precio venta
-              </th>
-              <th title="PV - Coste">Margen €</th>
-              <th
-                title="(PV - Coste) / Coste · 100. % de sobreprecio vs valor material."
-              >
-                Margen % (vs coste)
-              </th>
-              <th title="Si el peso viene medido o estimado con densidades">
-                Origen peso
-              </th>
+              <th>Material</th>
+              <th>Tipo</th>
+              <th>Unidad</th>
+              <th>Peso</th>
+              <th>Coste unit.</th>
+              <th>Coste total</th>
+              <th>Origen peso</th>
               <th></th>
             </tr>
           </thead>
@@ -448,8 +492,9 @@
 
       <div style="margin-top: 0.75rem;">
         <span class="hint">
-          * El margen % se calcula vs coste de materiales. Cuanto mayor sea, más
-          "inflado" está el precio frente al valor material.
+          * El margen % se calcula vs coste total (materiales + mano de obra).
+          Cuanto mayor sea, más "inflado" está el precio frente al valor
+          material.
         </span>
       </div>
     </div>
@@ -459,8 +504,8 @@
       <div class="modal">
         <h2>Calcular peso por dimensiones</h2>
         <p class="hint">
-          Se usa volumen aproximado (largo × ancho × alto en cm) y densidad del
-          material o estándar 2,7 g/cm³.
+          Volumen (largo × ancho × alto en cm) y densidad del material o
+          estándar 2,7 g/cm³.
         </p>
         <div class="row">
           <label class="hint" style="flex: 1;">
@@ -506,56 +551,38 @@
       // ==============================
       // TABLA MAESTRA DE MATERIALES
       // ==============================
-      // OJO: aquí centralizamos unidades típicas y densidades.
-      // Densidades en g/cm3 (aproximadas, suficientes para estimación).
       const MATERIAL_MASTER = [
+        // Metales
+        { nombre: "Oro 24k", tipo: "metal", unidad: "€/g", densidad: 19.3 },
+        { nombre: "Oro 18k", tipo: "metal", unidad: "€/g", densidad: 15.6 },
+        { nombre: "Oro 14k", tipo: "metal", unidad: "€/g", densidad: 13.1 },
+        { nombre: "Oro 9k", tipo: "metal", unidad: "€/g", densidad: 11.0 },
+        { nombre: "Plata 925", tipo: "metal", unidad: "€/g", densidad: 10.5 },
+        { nombre: "Platino", tipo: "metal", unidad: "€/g", densidad: 21.45 },
+        { nombre: "Acero 316L", tipo: "metal", unidad: "€/g", densidad: 8.0 },
+        { nombre: "Titanio", tipo: "metal", unidad: "€/g", densidad: 4.5 },
+        { nombre: "Paladio", tipo: "metal", unidad: "€/g", densidad: 12.0 },
+        // Piedras
+        { nombre: "Diamante", tipo: "piedra", unidad: "€/ct", densidad: 3.52 },
+        { nombre: "Zafiro", tipo: "piedra", unidad: "€/ct", densidad: 4.0 },
+        { nombre: "Rubí", tipo: "piedra", unidad: "€/ct", densidad: 4.0 },
+        { nombre: "Esmeralda", tipo: "piedra", unidad: "€/ct", densidad: 2.7 },
+        { nombre: "Amatista", tipo: "piedra", unidad: "€/ct", densidad: 2.7 },
+        { nombre: "Topacio", tipo: "piedra", unidad: "€/ct", densidad: 3.6 },
+        { nombre: "Perla", tipo: "piedra", unidad: "€/ct", densidad: 2.7 },
+        // Otros
+        { nombre: "Cerámica", tipo: "otro", unidad: "€/ud", densidad: 2.4 },
+        { nombre: "Nácar", tipo: "otro", unidad: "€/ud", densidad: 2.7 },
+        { nombre: "Cristal", tipo: "otro", unidad: "€/ud", densidad: 2.5 },
+        { nombre: "Otro metal", tipo: "metal", unidad: "€/g", densidad: 7.8 },
+        { nombre: "Otro mineral", tipo: "piedra", unidad: "€/ct", densidad: 3 },
+        { nombre: "Otro material", tipo: "otro", unidad: "€/ud", densidad: 2.7 },
+        // Mano de obra
         {
-          nombre: "Oro 18k",
-          tipo: "metal",
-          unidad: "€/g",
-          densidad: 15.6
-        },
-        {
-          nombre: "Plata 925",
-          tipo: "metal",
-          unidad: "€/g",
-          densidad: 10.5
-        },
-        {
-          nombre: "Platino",
-          tipo: "metal",
-          unidad: "€/g",
-          densidad: 21.45
-        },
-        {
-          nombre: "Diamante",
-          tipo: "piedra",
-          unidad: "€/ct",
-          densidad: 3.52
-        },
-        {
-          nombre: "Zafiro",
-          tipo: "piedra",
-          unidad: "€/ct",
-          densidad: 4.0
-        },
-        {
-          nombre: "Otro metal",
-          tipo: "metal",
-          unidad: "€/g",
-          densidad: 7.8
-        },
-        {
-          nombre: "Otro mineral",
-          tipo: "piedra",
-          unidad: "€/ct",
-          densidad: 3.0
-        },
-        {
-          nombre: "Otro material",
-          tipo: "otro",
+          nombre: "Mano de obra",
+          tipo: "mano_obra",
           unidad: "€/ud",
-          densidad: 2.7
+          densidad: 0
         }
       ];
 
@@ -575,7 +602,8 @@
         currency: "EUR",
         lines: [],
         nextId: 1,
-        snapshots: []
+        snapshots: [],
+        salePriceTotal: "" // precio venta del producto
       };
 
       // Elementos DOM
@@ -600,10 +628,16 @@
       const dimDensityMode = document.getElementById("dimDensityMode");
       const dimCancelBtn = document.getElementById("dimCancelBtn");
       const dimApplyBtn = document.getElementById("dimApplyBtn");
+      const laborSection = document.getElementById("laborSection");
+      const laborCostInput = document.getElementById("laborCostInput");
+      const addLaborBtn = document.getElementById("addLaborBtn");
 
       // ==============================
       // UTILIDADES
       // ==============================
+      const LS_CURRENT_KEY = "safire_v22_current";
+      const LS_HISTORY_KEY = "safire_v22_history";
+
       function getMasterFor(nombre) {
         return MATERIAL_MASTER.find((m) => m.nombre === nombre);
       }
@@ -618,7 +652,6 @@
           peso: "",
           costeUnitario: "",
           costeTotal: 0,
-          precioVenta: "",
           margen: 0,
           margenPctCoste: 0,
           pesoEstimado: false,
@@ -628,10 +661,13 @@
 
       function initStateFresh() {
         state.lines = [createEmptyLine()];
+        state.salePriceTotal = "";
       }
 
       function formatCurrency(n) {
-        if (isNaN(n)) return "0 " + (state.currency === "EUR" ? "€" : "$");
+        if (isNaN(n)) {
+          return "0 " + (state.currency === "EUR" ? "€" : "$");
+        }
         return n.toLocaleString("es-ES", {
           style: "currency",
           currency: state.currency,
@@ -654,15 +690,8 @@
       function recalcLine(line) {
         const peso = parseFloat(line.peso) || 0;
         const cu = parseFloat(line.costeUnitario) || 0;
-        const pv = parseFloat(line.precioVenta) || 0;
-
         const costeTotal = peso * cu;
-        const margen = pv - costeTotal;
-        const margenPctCoste = costeTotal > 0 ? (margen / costeTotal) * 100 : 0;
-
         line.costeTotal = costeTotal;
-        line.margen = margen;
-        line.margenPctCoste = margenPctCoste;
       }
 
       function recalcAll() {
@@ -671,31 +700,29 @@
 
       function getGlobalMetrics() {
         let totalCoste = 0;
-        let totalVenta = 0;
         state.lines.forEach((l) => {
           totalCoste += l.costeTotal || 0;
-          totalVenta += parseFloat(l.precioVenta) || 0;
         });
-        const margen = totalVenta - totalCoste;
-        const margenPctCoste =
-          totalCoste > 0 ? (margen / totalCoste) * 100 : 0;
-        return { totalCoste, totalVenta, margen, margenPctCoste };
+        const pv = parseFloat(state.salePriceTotal) || 0;
+        const margen = pv - totalCoste;
+        const margenPctCoste = totalCoste > 0 ? (margen / totalCoste) * 100 : 0;
+        return { totalCoste, salePriceTotal: pv, margen, margenPctCoste };
       }
 
       // ==============================
       // LOCALSTORAGE - HISTORIAL
       // ==============================
-      const LS_CURRENT_KEY = "safire_v22_current";
-      const LS_HISTORY_KEY = "safire_v22_history";
-
       function saveCurrentToLocalStorage() {
         const payload = {
           mode: state.mode,
           currency: state.currency,
           lines: state.lines,
-          nextId: state.nextId
+          nextId: state.nextId,
+          salePriceTotal: state.salePriceTotal
         };
-        localStorage.setItem(LS_CURRENT_KEY, JSON.stringify(payload));
+        try {
+          localStorage.setItem(LS_CURRENT_KEY, JSON.stringify(payload));
+        } catch (e) {}
       }
 
       function loadCurrentFromLocalStorage() {
@@ -708,9 +735,9 @@
           state.currency = data.currency || "EUR";
           state.lines = data.lines;
           state.nextId = data.nextId || state.lines.length + 1;
+          state.salePriceTotal = data.salePriceTotal || "";
           return true;
         } catch (e) {
-          console.warn("Error cargando estado actual", e);
           return false;
         }
       }
@@ -724,7 +751,8 @@
             mode: state.mode,
             currency: state.currency,
             lines: state.lines,
-            nextId: state.nextId
+            nextId: state.nextId,
+            salePriceTotal: state.salePriceTotal
           }
         };
         let history = [];
@@ -734,7 +762,9 @@
         } catch (e) {}
         history.unshift(snapshot);
         history = history.slice(0, 20);
-        localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
+        try {
+          localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
+        } catch (e) {}
         state.snapshots = history;
         refreshHistorySelect();
       }
@@ -782,13 +812,14 @@
         state.currency = snap.data.currency || "EUR";
         state.lines = snap.data.lines || [];
         state.nextId = snap.data.nextId || state.lines.length + 1;
+        state.salePriceTotal = snap.data.salePriceTotal || "";
         currencySelect.value = state.currency;
-        modeToggle
-          .querySelectorAll("button")
-          .forEach((btn) => {
-            const m = btn.getAttribute("data-mode");
-            btn.classList.toggle("active", m === state.mode);
-          });
+        modeToggle.querySelectorAll("button").forEach((btn) => {
+          const m = btn.getAttribute("data-mode");
+          btn.classList.toggle("active", m === state.mode);
+        });
+        laborSection.style.display =
+          state.mode === "advanced" ? "flex" : "none";
         render();
       }
 
@@ -798,6 +829,14 @@
       function render() {
         recalcAll();
         renderLines();
+        renderSummary();
+        updateDiagnostic();
+        saveCurrentToLocalStorage();
+      }
+
+      function softUpdateAfterInput() {
+        // Para inputs de texto/número: no re-dibujamos la tabla para no perder foco.
+        recalcAll();
         renderSummary();
         updateDiagnostic();
         saveCurrentToLocalStorage();
@@ -821,9 +860,7 @@
           selMat.value = line.material;
           selMat.title = "Material línea " + (idx + 1);
           selMat.addEventListener("change", (e) => {
-            const preset = MATERIAL_MASTER.find(
-              (m) => m.nombre === e.target.value
-            );
+            const preset = getMasterFor(e.target.value);
             line.material = e.target.value;
             if (preset) {
               line.tipo = preset.tipo;
@@ -838,20 +875,38 @@
           // Tipo
           const tdTipo = document.createElement("td");
           const selTipo = document.createElement("select");
-          ["metal", "piedra", "otro"].forEach((t) => {
+          const tipoOptions = ["metal", "piedra", "otro", "mano_obra"];
+          tipoOptions.forEach((t) => {
             const opt = document.createElement("option");
             opt.value = t;
             opt.textContent =
-              t === "metal" ? "Metal" : t === "piedra" ? "Piedra" : "Otro";
+              t === "metal"
+                ? "Metal"
+                : t === "piedra"
+                ? "Piedra"
+                : t === "mano_obra"
+                ? "Mano de obra"
+                : "Otro";
             selTipo.appendChild(opt);
           });
           selTipo.value = line.tipo;
+          const master = getMasterFor(line.material);
+          if (master) {
+            // Para materiales conocidos, el tipo está fijado
+            selTipo.disabled = true;
+          } else {
+            selTipo.disabled = false;
+          }
           selTipo.addEventListener("change", (e) => {
+            if (getMasterFor(line.material)) return; // por seguridad
             line.tipo = e.target.value;
             if (line.tipo === "metal" && line.unidad === "€/ct") {
               line.unidad = "€/g";
             } else if (line.tipo === "piedra" && line.unidad === "€/g") {
               line.unidad = "€/ct";
+            } else if (line.tipo === "mano_obra") {
+              line.unidad = "€/ud";
+              if (!line.peso) line.peso = 1;
             }
             recalcLine(line);
             render();
@@ -890,8 +945,7 @@
           inpPeso.addEventListener("input", (e) => {
             line.peso = e.target.value;
             line.pesoEstimado = false; // si lo escribe a mano, pasa a manual
-            recalcLine(line);
-            render();
+            softUpdateAfterInput();
           });
           tdPeso.appendChild(inpPeso);
           if (line.pesoEstimado) {
@@ -912,8 +966,7 @@
           inpCu.value = line.costeUnitario;
           inpCu.addEventListener("input", (e) => {
             line.costeUnitario = e.target.value;
-            recalcLine(line);
-            render();
+            softUpdateAfterInput();
           });
           tdCu.appendChild(inpCu);
           tr.appendChild(tdCu);
@@ -922,32 +975,6 @@
           const tdCt = document.createElement("td");
           tdCt.textContent = formatCurrency(line.costeTotal);
           tr.appendChild(tdCt);
-
-          // Precio venta
-          const tdPv = document.createElement("td");
-          const inpPv = document.createElement("input");
-          inpPv.type = "number";
-          inpPv.step = "0.01";
-          inpPv.min = "0";
-          inpPv.placeholder = "0.00";
-          inpPv.value = line.precioVenta;
-          inpPv.addEventListener("input", (e) => {
-            line.precioVenta = e.target.value;
-            recalcLine(line);
-            render();
-          });
-          tdPv.appendChild(inpPv);
-          tr.appendChild(tdPv);
-
-          // Margen €
-          const tdMargen = document.createElement("td");
-          tdMargen.textContent = formatCurrency(line.margen);
-          tr.appendChild(tdMargen);
-
-          // Margen % vs coste
-          const tdMargenPct = document.createElement("td");
-          tdMargenPct.textContent = formatPct(line.margenPctCoste);
-          tr.appendChild(tdMargenPct);
 
           // Origen peso
           const tdOrigen = document.createElement("td");
@@ -964,7 +991,7 @@
           selOrigen.value = line.pesoEstimado ? "estimado" : "manual";
           selOrigen.addEventListener("change", (e) => {
             line.pesoEstimado = e.target.value === "estimado";
-            render();
+            softUpdateAfterInput();
           });
           tdOrigen.appendChild(selOrigen);
           tr.appendChild(tdOrigen);
@@ -990,16 +1017,37 @@
       }
 
       function renderSummary() {
-        const { totalCoste, totalVenta, margen, margenPctCoste } =
+        const { totalCoste, salePriceTotal, margen, margenPctCoste } =
           getGlobalMetrics();
         summaryBar.innerHTML = "";
 
+        // Precio venta total (input)
+        const pvItem = document.createElement("div");
+        pvItem.className = "summary-item";
+        const labelPv = document.createElement("span");
+        labelPv.className = "summary-label";
+        labelPv.textContent = "Precio venta total (producto)";
+        const inputPv = document.createElement("input");
+        inputPv.type = "number";
+        inputPv.step = "0.01";
+        inputPv.min = "0";
+        inputPv.value =
+          state.salePriceTotal !== "" ? state.salePriceTotal : "";
+        inputPv.style.width = "110px";
+        inputPv.addEventListener("input", (e) => {
+          state.salePriceTotal = e.target.value;
+          softUpdateAfterInput();
+        });
+        pvItem.appendChild(labelPv);
+        pvItem.appendChild(inputPv);
+        summaryBar.appendChild(pvItem);
+
+        // Restantes (solo lectura)
         const blocks = [
           {
-            label: "Coste total materiales",
+            label: "Coste total materiales + mano de obra",
             value: formatCurrency(totalCoste)
           },
-          { label: "Precio venta total", value: formatCurrency(totalVenta) },
           { label: "Margen total", value: formatCurrency(margen) },
           {
             label: "Margen total % vs coste",
@@ -1024,17 +1072,15 @@
       // DIAGNÓSTICO DE SOBREPRECIO
       // ==============================
       function updateDiagnostic() {
-        const { totalCoste, totalVenta, margen, margenPctCoste } =
+        const { totalCoste, salePriceTotal, margen, margenPctCoste } =
           getGlobalMetrics();
 
-        if (!totalCoste && !totalVenta) {
+        if (!totalCoste && !salePriceTotal) {
           diagnosticBadge.className = "badge badge-good";
           diagnosticText.textContent = "Sin datos suficientes";
           return;
         }
 
-        // margenPctCoste = (PV - Coste) / Coste * 100
-        // Interpretación: % de sobreprecio frente al valor material
         if (margenPctCoste <= 20) {
           diagnosticBadge.className = "badge badge-good";
           diagnosticText.textContent =
@@ -1061,9 +1107,6 @@
           "Peso",
           "Coste unitario",
           "Coste total",
-          "Precio venta",
-          "Margen €",
-          "Margen % vs coste",
           "Origen peso"
         ];
         const rows = [headers];
@@ -1076,20 +1119,17 @@
             l.peso,
             l.costeUnitario,
             l.costeTotal,
-            l.precioVenta,
-            l.margen,
-            l.margenPctCoste,
             l.pesoEstimado ? "estimado" : "manual"
           ]);
         });
 
-        const { totalCoste, totalVenta, margen, margenPctCoste } =
+        const { totalCoste, salePriceTotal, margen, margenPctCoste } =
           getGlobalMetrics();
 
         rows.push([]);
         rows.push(["RESUMEN"]);
         rows.push(["Coste total", totalCoste]);
-        rows.push(["Precio venta total", totalVenta]);
+        rows.push(["Precio venta total", salePriceTotal]);
         rows.push(["Margen total", margen]);
         rows.push(["Margen total % vs coste", margenPctCoste]);
 
@@ -1120,42 +1160,101 @@
         state.lines = [];
         state.nextId = 1;
 
-        if (name === "solitario") {
+        if (name === "solitario_ligero") {
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
               tipo: "metal",
-              unidad: "€/g"
+              unidad: "€/g",
+              peso: 3.5,
+              pesoEstimado: true
             })
           );
           state.lines.push(
             createEmptyLine({
               material: "Diamante",
               tipo: "piedra",
-              unidad: "€/ct"
+              unidad: "€/ct",
+              peso: 0.2,
+              pesoEstimado: true
             })
           );
-        } else if (name === "alianza") {
+        } else if (name === "solitario_potente") {
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
               tipo: "metal",
-              unidad: "€/g"
+              unidad: "€/g",
+              peso: 4.5,
+              pesoEstimado: true
+            })
+          );
+          state.lines.push(
+            createEmptyLine({
+              material: "Diamante",
+              tipo: "piedra",
+              unidad: "€/ct",
+              peso: 0.35,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "alianza_fina") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 3.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "alianza_ancha") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 6.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "cadena_fina") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 6.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "cadena_gruesa") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 15.0,
+              pesoEstimado: true
             })
           );
         } else if (name === "reloj_acero") {
           state.lines.push(
             createEmptyLine({
-              material: "Otro metal",
+              material: "Acero 316L",
               tipo: "metal",
-              unidad: "€/g"
+              unidad: "€/g",
+              peso: 80.0,
+              pesoEstimado: true
             })
           );
           state.lines.push(
             createEmptyLine({
               material: "Zafiro",
               tipo: "piedra",
-              unidad: "€/ct"
+              unidad: "€/ct",
+              peso: 0.1,
+              pesoEstimado: true
             })
           );
         }
@@ -1168,12 +1267,11 @@
       // CÁLCULO POR DIMENSIONES
       // ==============================
       function openDimensionsModal() {
-        // poblar select de línea
         dimLineSelect.innerHTML = "";
         state.lines.forEach((l, idx) => {
           const opt = document.createElement("option");
           opt.value = l.id;
-          opt.textContent = (idx + 1) + " · " + l.material;
+          opt.textContent = idx + 1 + " · " + l.material;
           dimLineSelect.appendChild(opt);
         });
         dimLargo.value = "";
@@ -1207,7 +1305,6 @@
         }
         const weightGrams = volume * density;
 
-        // Aplicamos peso en la unidad actual sin convertir (tú ya sabes si son g o ct)
         line.peso = weightGrams.toFixed(3);
         line.pesoEstimado = true;
         recalcLine(line);
@@ -1230,6 +1327,9 @@
               b.getAttribute("data-mode") === state.mode
             );
           });
+
+          laborSection.style.display =
+            state.mode === "advanced" ? "flex" : "none";
 
           render();
         });
@@ -1277,17 +1377,35 @@
       dimCancelBtn.addEventListener("click", closeDimensionsModal);
       dimApplyBtn.addEventListener("click", applyDimensionsToLine);
 
-      // Cerrar modal si clicas fuera
       dimensionsModal.addEventListener("click", (e) => {
         if (e.target === dimensionsModal) {
           closeDimensionsModal();
         }
       });
 
+      addLaborBtn.addEventListener("click", () => {
+        const val = parseFloat(laborCostInput.value) || 0;
+        if (!val) {
+          alert("Introduce un coste de mano de obra mayor que 0.");
+          return;
+        }
+        state.lines.push(
+          createEmptyLine({
+            material: "Mano de obra",
+            tipo: "mano_obra",
+            unidad: "€/ud",
+            peso: 1,
+            costeUnitario: val,
+            pesoEstimado: false
+          })
+        );
+        laborCostInput.value = "";
+        render();
+      });
+
       // ==============================
       // BOOTSTRAP
       // ==============================
-      // Cargar historial y último estado
       loadHistoryFromLocalStorage();
       refreshHistorySelect();
 
@@ -1301,6 +1419,9 @@
           btn.classList.toggle("active", m === state.mode);
         });
       }
+
+      laborSection.style.display =
+        state.mode === "advanced" ? "flex" : "none";
 
       render();
     </script>
