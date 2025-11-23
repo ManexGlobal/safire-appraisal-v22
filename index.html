@@ -1,12 +1,1308 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Safire Appraisal — V2.2</title>
-    <script type="module" src="/src/main.jsx"></script>
+    <title>Safire Appraisal V22</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #0b0c10;
+        color: #f5f5f5;
+      }
+
+      body {
+        margin: 0;
+        padding: 1.5rem;
+        background: radial-gradient(circle at top, #1f2833 0, #0b0c10 55%);
+      }
+
+      h1 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.6rem;
+      }
+
+      .sub {
+        color: #c5c6c7;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+      }
+
+      .card {
+        background: rgba(15, 20, 30, 0.95);
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(10px);
+      }
+
+      .row {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .row + .row {
+        margin-top: 0.75rem;
+      }
+
+      .pill-toggle {
+        display: inline-flex;
+        padding: 3px;
+        background: #0b0c10;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .pill-toggle button {
+        border: none;
+        background: transparent;
+        color: #c5c6c7;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .pill-toggle button.active {
+        background: #45a29e;
+        color: #0b0c10;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+
+      .badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .badge-good {
+        border-color: #45a29e;
+      }
+      .badge-good .badge-dot {
+        background: #45a29e;
+      }
+
+      .badge-warning {
+        border-color: #ffb347;
+      }
+      .badge-warning .badge-dot {
+        background: #ffb347;
+      }
+
+      .badge-danger {
+        border-color: #ff6b6b;
+      }
+      .badge-danger .badge-dot {
+        background: #ff6b6b;
+      }
+
+      .table-wrapper {
+        margin-top: 1rem;
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        min-width: 900px;
+      }
+
+      th,
+      td {
+        padding: 0.4rem 0.35rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #c5c6c7;
+        background: rgba(10, 15, 25, 0.9);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.01);
+      }
+
+      input,
+      select {
+        background: rgba(10, 15, 25, 0.9);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 0.25rem 0.35rem;
+        color: #f5f5f5;
+        font-size: 0.8rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #45a29e;
+        box-shadow: 0 0 0 1px rgba(69, 162, 158, 0.4);
+      }
+
+      input[type="number"] {
+        text-align: right;
+      }
+
+      .btn {
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: transparent;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.8rem;
+        color: #f5f5f5;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .btn-primary {
+        background: #45a29e;
+        border-color: #66fcf1;
+        color: #0b0c10;
+      }
+
+      .btn-ghost {
+        background: transparent;
+      }
+
+      .btn-danger {
+        border-color: #ff6b6b;
+        color: #ff6b6b;
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      .summary {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+      }
+
+      .summary-item {
+        padding: 0.5rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .summary-label {
+        color: #c5c6c7;
+        margin-right: 0.35rem;
+      }
+
+      .summary-value {
+        font-weight: 600;
+      }
+
+      .hint {
+        font-size: 0.7rem;
+        color: #c5c6c7;
+        opacity: 0.8;
+      }
+
+      .chip-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+
+      .chip {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid transparent;
+      }
+
+      .chip.highlight {
+        border-color: #45a29e;
+      }
+
+      .tag-estimado {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        border: 1px dashed #ffb347;
+        color: #ffb347;
+      }
+
+      /* Modal simple para cálculo por dimensiones */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+      }
+
+      .modal {
+        background: #0b0c10;
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        max-width: 360px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+      }
+
+      .modal h2 {
+        font-size: 1rem;
+        margin-top: 0;
+      }
+
+      .modal .row {
+        margin-top: 0.5rem;
+      }
+
+      .modal-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 0.75rem;
+        }
+
+        .card {
+          padding: 0.9rem;
+        }
+
+        table {
+          min-width: 750px;
+        }
+
+        h1 {
+          font-size: 1.3rem;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div class="card">
+      <!-- Cabecera -->
+      <div
+        class="row"
+        style="justify-content: space-between; margin-bottom: 0.5rem;"
+      >
+        <div>
+          <h1>Safire Appraisal V22</h1>
+          <div class="sub">
+            Comparador de costes vs precio de venta para joyería / relojería.
+          </div>
+          <div class="row">
+            <div class="pill-toggle" id="modeToggle">
+              <button data-mode="basic" class="active">Modo básico</button>
+              <button data-mode="advanced">Modo avanzado</button>
+            </div>
+            <span class="hint">
+              En ambos modos puedes añadir los materiales que quieras; el
+              avanzado está pensado para control más fino.
+            </span>
+          </div>
+        </div>
+        <div class="chip-group">
+          <div class="chip highlight">EUR / g · ct · dwt · ozt · ud</div>
+          <div class="chip">Peso manual / estimado</div>
+          <div class="chip">Detector de sobreprecio</div>
+        </div>
+      </div>
+
+      <!-- Barra de opciones globales -->
+      <div class="row" style="justify-content: space-between;">
+        <div class="row">
+          <label class="hint">
+            Divisa:&nbsp;
+            <select id="currencySelect" title="Solo afecta al formato">
+              <option value="EUR">EUR €</option>
+              <option value="USD">USD $</option>
+            </select>
+          </label>
+          <label class="hint">
+            Plantilla rápida:&nbsp;
+            <select id="templateSelect">
+              <option value="">— Vacía —</option>
+              <option value="solitario">Solitario oro + diamante</option>
+              <option value="alianza">Alianza oro</option>
+              <option value="reloj_acero">Reloj acero + zafiro</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button
+            class="btn btn-ghost"
+            id="dimensionsBtn"
+            title="Calcular peso aproximado a partir de dimensiones físicas"
+          >
+            ⚙ Calc. peso por dimensiones
+          </button>
+          <button
+            class="btn btn-ghost"
+            id="saveSnapshotBtn"
+            title="Guardar esta comparación en el historial"
+          >
+            💾 Guardar comparación
+          </button>
+          <label class="hint">
+            Historial:
+            <select id="historySelect">
+              <option value="">— Ninguna —</option>
+            </select>
+          </label>
+          <button
+            class="btn btn-ghost"
+            id="exportCsvBtn"
+            title="Exportar a CSV"
+          >
+            ⬇ CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla principal -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th title="Nombre comercial del componente">Material</th>
+              <th title="Metal / piedra / otro">Tipo</th>
+              <th title="Unidad de coste (metal: €/g, piedra: €/ct, etc.)">
+                Unidad
+              </th>
+              <th title="Peso en la unidad seleccionada (g, ct, ud...)">Peso</th>
+              <th title="Coste por unidad de peso">Coste unit.</th>
+              <th title="Coste total del material">Coste total</th>
+              <th title="Precio de venta imputado a este material/línea">
+                Precio venta
+              </th>
+              <th title="PV - Coste">Margen €</th>
+              <th
+                title="(PV - Coste) / Coste · 100. % de sobreprecio vs valor material."
+              >
+                Margen % (vs coste)
+              </th>
+              <th title="Si el peso viene medido o estimado con densidades">
+                Origen peso
+              </th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="linesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Acciones y diagnóstico -->
+      <div
+        class="row"
+        style="margin-top: 0.75rem; justify-content: space-between;"
+      >
+        <div class="row">
+          <button class="btn btn-primary" id="addLineBtn">
+            + Añadir material
+          </button>
+          <button class="btn btn-ghost" id="resetBtn" title="Vaciar todo">
+            Reiniciar
+          </button>
+        </div>
+        <div class="badge badge-good" id="diagnosticBadge">
+          <span class="badge-dot"></span>
+          <span id="diagnosticText">Sin datos suficientes</span>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="summary" id="summaryBar"></div>
+
+      <div style="margin-top: 0.75rem;">
+        <span class="hint">
+          * El margen % se calcula vs coste de materiales. Cuanto mayor sea, más
+          "inflado" está el precio frente al valor material.
+        </span>
+      </div>
+    </div>
+
+    <!-- Modal para cálculo por dimensiones -->
+    <div id="dimensionsModal" class="modal-backdrop" style="display: none;">
+      <div class="modal">
+        <h2>Calcular peso por dimensiones</h2>
+        <p class="hint">
+          Se usa volumen aproximado (largo × ancho × alto en cm) y densidad del
+          material o estándar 2,7 g/cm³.
+        </p>
+        <div class="row">
+          <label class="hint" style="flex: 1;">
+            Línea:
+            <select id="dimLineSelect"></select>
+          </label>
+        </div>
+        <div class="row">
+          <label class="hint" style="flex: 1;">
+            Largo (cm)
+            <input id="dimLargo" type="number" step="0.01" min="0" />
+          </label>
+          <label class="hint" style="flex: 1;">
+            Ancho (cm)
+            <input id="dimAncho" type="number" step="0.01" min="0" />
+          </label>
+          <label class="hint" style="flex: 1;">
+            Alto (cm)
+            <input id="dimAlto" type="number" step="0.01" min="0" />
+          </label>
+        </div>
+        <div class="row">
+          <label class="hint" style="flex: 1;">
+            Densidad:
+            <select id="dimDensityMode">
+              <option value="material">
+                Usar densidad del material (si existe)
+              </option>
+              <option value="std">Estándar 2,7 g/cm³</option>
+            </select>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="dimCancelBtn">Cancelar</button>
+          <button class="btn btn-primary" id="dimApplyBtn">
+            Aplicar peso estimado
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ==============================
+      // TABLA MAESTRA DE MATERIALES
+      // ==============================
+      // OJO: aquí centralizamos unidades típicas y densidades.
+      // Densidades en g/cm3 (aproximadas, suficientes para estimación).
+      const MATERIAL_MASTER = [
+        {
+          nombre: "Oro 18k",
+          tipo: "metal",
+          unidad: "€/g",
+          densidad: 15.6
+        },
+        {
+          nombre: "Plata 925",
+          tipo: "metal",
+          unidad: "€/g",
+          densidad: 10.5
+        },
+        {
+          nombre: "Platino",
+          tipo: "metal",
+          unidad: "€/g",
+          densidad: 21.45
+        },
+        {
+          nombre: "Diamante",
+          tipo: "piedra",
+          unidad: "€/ct",
+          densidad: 3.52
+        },
+        {
+          nombre: "Zafiro",
+          tipo: "piedra",
+          unidad: "€/ct",
+          densidad: 4.0
+        },
+        {
+          nombre: "Otro metal",
+          tipo: "metal",
+          unidad: "€/g",
+          densidad: 7.8
+        },
+        {
+          nombre: "Otro mineral",
+          tipo: "piedra",
+          unidad: "€/ct",
+          densidad: 3.0
+        },
+        {
+          nombre: "Otro material",
+          tipo: "otro",
+          unidad: "€/ud",
+          densidad: 2.7
+        }
+      ];
+
+      const MATERIAL_PRESETS = MATERIAL_MASTER.map((m) => ({
+        nombre: m.nombre,
+        tipo: m.tipo,
+        unidad: m.unidad
+      }));
+
+      const STD_DENSITY = 2.7; // g/cm3 genérica
+
+      // ==============================
+      // ESTADO GLOBAL
+      // ==============================
+      const state = {
+        mode: "basic", // "basic" | "advanced"
+        currency: "EUR",
+        lines: [],
+        nextId: 1,
+        snapshots: []
+      };
+
+      // Elementos DOM
+      const linesBody = document.getElementById("linesBody");
+      const addLineBtn = document.getElementById("addLineBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const summaryBar = document.getElementById("summaryBar");
+      const diagnosticBadge = document.getElementById("diagnosticBadge");
+      const diagnosticText = document.getElementById("diagnosticText");
+      const modeToggle = document.getElementById("modeToggle");
+      const currencySelect = document.getElementById("currencySelect");
+      const templateSelect = document.getElementById("templateSelect");
+      const saveSnapshotBtn = document.getElementById("saveSnapshotBtn");
+      const historySelect = document.getElementById("historySelect");
+      const exportCsvBtn = document.getElementById("exportCsvBtn");
+      const dimensionsBtn = document.getElementById("dimensionsBtn");
+      const dimensionsModal = document.getElementById("dimensionsModal");
+      const dimLineSelect = document.getElementById("dimLineSelect");
+      const dimLargo = document.getElementById("dimLargo");
+      const dimAncho = document.getElementById("dimAncho");
+      const dimAlto = document.getElementById("dimAlto");
+      const dimDensityMode = document.getElementById("dimDensityMode");
+      const dimCancelBtn = document.getElementById("dimCancelBtn");
+      const dimApplyBtn = document.getElementById("dimApplyBtn");
+
+      // ==============================
+      // UTILIDADES
+      // ==============================
+      function getMasterFor(nombre) {
+        return MATERIAL_MASTER.find((m) => m.nombre === nombre);
+      }
+
+      function createEmptyLine(overrides = {}) {
+        const defaultMat = MATERIAL_PRESETS[0];
+        return {
+          id: state.nextId++,
+          material: defaultMat.nombre,
+          tipo: defaultMat.tipo,
+          unidad: defaultMat.unidad,
+          peso: "",
+          costeUnitario: "",
+          costeTotal: 0,
+          precioVenta: "",
+          margen: 0,
+          margenPctCoste: 0,
+          pesoEstimado: false,
+          ...overrides
+        };
+      }
+
+      function initStateFresh() {
+        state.lines = [createEmptyLine()];
+      }
+
+      function formatCurrency(n) {
+        if (isNaN(n)) return "0 " + (state.currency === "EUR" ? "€" : "$");
+        return n.toLocaleString("es-ES", {
+          style: "currency",
+          currency: state.currency,
+          maximumFractionDigits: 2
+        });
+      }
+
+      function formatPct(n) {
+        if (isNaN(n)) return "0 %";
+        return (
+          n.toLocaleString("es-ES", {
+            maximumFractionDigits: 1
+          }) + " %"
+        );
+      }
+
+      // ==============================
+      // CÁLCULOS
+      // ==============================
+      function recalcLine(line) {
+        const peso = parseFloat(line.peso) || 0;
+        const cu = parseFloat(line.costeUnitario) || 0;
+        const pv = parseFloat(line.precioVenta) || 0;
+
+        const costeTotal = peso * cu;
+        const margen = pv - costeTotal;
+        const margenPctCoste = costeTotal > 0 ? (margen / costeTotal) * 100 : 0;
+
+        line.costeTotal = costeTotal;
+        line.margen = margen;
+        line.margenPctCoste = margenPctCoste;
+      }
+
+      function recalcAll() {
+        state.lines.forEach(recalcLine);
+      }
+
+      function getGlobalMetrics() {
+        let totalCoste = 0;
+        let totalVenta = 0;
+        state.lines.forEach((l) => {
+          totalCoste += l.costeTotal || 0;
+          totalVenta += parseFloat(l.precioVenta) || 0;
+        });
+        const margen = totalVenta - totalCoste;
+        const margenPctCoste =
+          totalCoste > 0 ? (margen / totalCoste) * 100 : 0;
+        return { totalCoste, totalVenta, margen, margenPctCoste };
+      }
+
+      // ==============================
+      // LOCALSTORAGE - HISTORIAL
+      // ==============================
+      const LS_CURRENT_KEY = "safire_v22_current";
+      const LS_HISTORY_KEY = "safire_v22_history";
+
+      function saveCurrentToLocalStorage() {
+        const payload = {
+          mode: state.mode,
+          currency: state.currency,
+          lines: state.lines,
+          nextId: state.nextId
+        };
+        localStorage.setItem(LS_CURRENT_KEY, JSON.stringify(payload));
+      }
+
+      function loadCurrentFromLocalStorage() {
+        try {
+          const raw = localStorage.getItem(LS_CURRENT_KEY);
+          if (!raw) return false;
+          const data = JSON.parse(raw);
+          if (!data || !Array.isArray(data.lines)) return false;
+          state.mode = data.mode || "basic";
+          state.currency = data.currency || "EUR";
+          state.lines = data.lines;
+          state.nextId = data.nextId || state.lines.length + 1;
+          return true;
+        } catch (e) {
+          console.warn("Error cargando estado actual", e);
+          return false;
+        }
+      }
+
+      function saveSnapshotToHistory(name) {
+        const snapshot = {
+          id: Date.now(),
+          name,
+          createdAt: new Date().toISOString(),
+          data: {
+            mode: state.mode,
+            currency: state.currency,
+            lines: state.lines,
+            nextId: state.nextId
+          }
+        };
+        let history = [];
+        try {
+          const raw = localStorage.getItem(LS_HISTORY_KEY);
+          if (raw) history = JSON.parse(raw) || [];
+        } catch (e) {}
+        history.unshift(snapshot);
+        history = history.slice(0, 20);
+        localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
+        state.snapshots = history;
+        refreshHistorySelect();
+      }
+
+      function loadHistoryFromLocalStorage() {
+        try {
+          const raw = localStorage.getItem(LS_HISTORY_KEY);
+          if (!raw) {
+            state.snapshots = [];
+            return;
+          }
+          state.snapshots = JSON.parse(raw) || [];
+        } catch (e) {
+          state.snapshots = [];
+        }
+      }
+
+      function refreshHistorySelect() {
+        historySelect.innerHTML =
+          '<option value="">— Ninguna —</option>';
+        state.snapshots.forEach((snap) => {
+          const opt = document.createElement("option");
+          const date = new Date(snap.createdAt);
+          const label =
+            snap.name +
+            " · " +
+            date.toLocaleString("es-ES", {
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+          opt.value = snap.id;
+          opt.textContent = label;
+          historySelect.appendChild(opt);
+        });
+      }
+
+      function applySnapshot(id) {
+        const snap = state.snapshots.find(
+          (s) => String(s.id) === String(id)
+        );
+        if (!snap) return;
+        state.mode = snap.data.mode || "basic";
+        state.currency = snap.data.currency || "EUR";
+        state.lines = snap.data.lines || [];
+        state.nextId = snap.data.nextId || state.lines.length + 1;
+        currencySelect.value = state.currency;
+        modeToggle
+          .querySelectorAll("button")
+          .forEach((btn) => {
+            const m = btn.getAttribute("data-mode");
+            btn.classList.toggle("active", m === state.mode);
+          });
+        render();
+      }
+
+      // ==============================
+      // RENDER
+      // ==============================
+      function render() {
+        recalcAll();
+        renderLines();
+        renderSummary();
+        updateDiagnostic();
+        saveCurrentToLocalStorage();
+      }
+
+      function renderLines() {
+        linesBody.innerHTML = "";
+
+        state.lines.forEach((line, idx) => {
+          const tr = document.createElement("tr");
+
+          // Material
+          const tdMat = document.createElement("td");
+          const selMat = document.createElement("select");
+          MATERIAL_PRESETS.forEach((p) => {
+            const opt = document.createElement("option");
+            opt.value = p.nombre;
+            opt.textContent = p.nombre;
+            selMat.appendChild(opt);
+          });
+          selMat.value = line.material;
+          selMat.title = "Material línea " + (idx + 1);
+          selMat.addEventListener("change", (e) => {
+            const preset = MATERIAL_MASTER.find(
+              (m) => m.nombre === e.target.value
+            );
+            line.material = e.target.value;
+            if (preset) {
+              line.tipo = preset.tipo;
+              line.unidad = preset.unidad;
+            }
+            recalcLine(line);
+            render();
+          });
+          tdMat.appendChild(selMat);
+          tr.appendChild(tdMat);
+
+          // Tipo
+          const tdTipo = document.createElement("td");
+          const selTipo = document.createElement("select");
+          ["metal", "piedra", "otro"].forEach((t) => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent =
+              t === "metal" ? "Metal" : t === "piedra" ? "Piedra" : "Otro";
+            selTipo.appendChild(opt);
+          });
+          selTipo.value = line.tipo;
+          selTipo.addEventListener("change", (e) => {
+            line.tipo = e.target.value;
+            if (line.tipo === "metal" && line.unidad === "€/ct") {
+              line.unidad = "€/g";
+            } else if (line.tipo === "piedra" && line.unidad === "€/g") {
+              line.unidad = "€/ct";
+            }
+            recalcLine(line);
+            render();
+          });
+          tdTipo.appendChild(selTipo);
+          tr.appendChild(tdTipo);
+
+          // Unidad
+          const tdUnidad = document.createElement("td");
+          const selUnidad = document.createElement("select");
+          ["€/g", "€/ct", "€/dwt", "€/ozt", "€/ud"].forEach((u) => {
+            const opt = document.createElement("option");
+            opt.value = u;
+            opt.textContent = u;
+            selUnidad.appendChild(opt);
+          });
+          selUnidad.value = line.unidad;
+          selUnidad.addEventListener("change", (e) => {
+            line.unidad = e.target.value;
+            recalcLine(line);
+            render();
+          });
+          tdUnidad.appendChild(selUnidad);
+          tr.appendChild(tdUnidad);
+
+          // Peso
+          const tdPeso = document.createElement("td");
+          const inpPeso = document.createElement("input");
+          inpPeso.type = "number";
+          inpPeso.step = "0.001";
+          inpPeso.min = "0";
+          inpPeso.placeholder = "0.000";
+          inpPeso.value = line.peso;
+          inpPeso.title =
+            "Peso en la unidad indicada. Si se rellena desde dimensiones, se marcará como estimado.";
+          inpPeso.addEventListener("input", (e) => {
+            line.peso = e.target.value;
+            line.pesoEstimado = false; // si lo escribe a mano, pasa a manual
+            recalcLine(line);
+            render();
+          });
+          tdPeso.appendChild(inpPeso);
+          if (line.pesoEstimado) {
+            const tag = document.createElement("span");
+            tag.className = "tag-estimado";
+            tag.textContent = "Est.";
+            tdPeso.appendChild(tag);
+          }
+          tr.appendChild(tdPeso);
+
+          // Coste unitario
+          const tdCu = document.createElement("td");
+          const inpCu = document.createElement("input");
+          inpCu.type = "number";
+          inpCu.step = "0.01";
+          inpCu.min = "0";
+          inpCu.placeholder = "0.00";
+          inpCu.value = line.costeUnitario;
+          inpCu.addEventListener("input", (e) => {
+            line.costeUnitario = e.target.value;
+            recalcLine(line);
+            render();
+          });
+          tdCu.appendChild(inpCu);
+          tr.appendChild(tdCu);
+
+          // Coste total
+          const tdCt = document.createElement("td");
+          tdCt.textContent = formatCurrency(line.costeTotal);
+          tr.appendChild(tdCt);
+
+          // Precio venta
+          const tdPv = document.createElement("td");
+          const inpPv = document.createElement("input");
+          inpPv.type = "number";
+          inpPv.step = "0.01";
+          inpPv.min = "0";
+          inpPv.placeholder = "0.00";
+          inpPv.value = line.precioVenta;
+          inpPv.addEventListener("input", (e) => {
+            line.precioVenta = e.target.value;
+            recalcLine(line);
+            render();
+          });
+          tdPv.appendChild(inpPv);
+          tr.appendChild(tdPv);
+
+          // Margen €
+          const tdMargen = document.createElement("td");
+          tdMargen.textContent = formatCurrency(line.margen);
+          tr.appendChild(tdMargen);
+
+          // Margen % vs coste
+          const tdMargenPct = document.createElement("td");
+          tdMargenPct.textContent = formatPct(line.margenPctCoste);
+          tr.appendChild(tdMargenPct);
+
+          // Origen peso
+          const tdOrigen = document.createElement("td");
+          const selOrigen = document.createElement("select");
+          [
+            { value: "manual", label: "Manual" },
+            { value: "estimado", label: "Estimado" }
+          ].forEach((o) => {
+            const opt = document.createElement("option");
+            opt.value = o.value;
+            opt.textContent = o.label;
+            selOrigen.appendChild(opt);
+          });
+          selOrigen.value = line.pesoEstimado ? "estimado" : "manual";
+          selOrigen.addEventListener("change", (e) => {
+            line.pesoEstimado = e.target.value === "estimado";
+            render();
+          });
+          tdOrigen.appendChild(selOrigen);
+          tr.appendChild(tdOrigen);
+
+          // Eliminar
+          const tdDel = document.createElement("td");
+          const btnDel = document.createElement("button");
+          btnDel.className = "btn btn-ghost btn-danger";
+          btnDel.textContent = "×";
+          btnDel.title = "Eliminar material";
+          btnDel.addEventListener("click", () => {
+            state.lines = state.lines.filter((l) => l.id !== line.id);
+            if (state.lines.length === 0) {
+              state.lines.push(createEmptyLine());
+            }
+            render();
+          });
+          tdDel.appendChild(btnDel);
+          tr.appendChild(tdDel);
+
+          linesBody.appendChild(tr);
+        });
+      }
+
+      function renderSummary() {
+        const { totalCoste, totalVenta, margen, margenPctCoste } =
+          getGlobalMetrics();
+        summaryBar.innerHTML = "";
+
+        const blocks = [
+          {
+            label: "Coste total materiales",
+            value: formatCurrency(totalCoste)
+          },
+          { label: "Precio venta total", value: formatCurrency(totalVenta) },
+          { label: "Margen total", value: formatCurrency(margen) },
+          {
+            label: "Margen total % vs coste",
+            value: formatPct(margenPctCoste)
+          }
+        ];
+
+        blocks.forEach((b) => {
+          const div = document.createElement("div");
+          div.className = "summary-item";
+          div.innerHTML =
+            '<span class="summary-label">' +
+            b.label +
+            '</span><span class="summary-value"> ' +
+            b.value +
+            "</span>";
+          summaryBar.appendChild(div);
+        });
+      }
+
+      // ==============================
+      // DIAGNÓSTICO DE SOBREPRECIO
+      // ==============================
+      function updateDiagnostic() {
+        const { totalCoste, totalVenta, margen, margenPctCoste } =
+          getGlobalMetrics();
+
+        if (!totalCoste && !totalVenta) {
+          diagnosticBadge.className = "badge badge-good";
+          diagnosticText.textContent = "Sin datos suficientes";
+          return;
+        }
+
+        // margenPctCoste = (PV - Coste) / Coste * 100
+        // Interpretación: % de sobreprecio frente al valor material
+        if (margenPctCoste <= 20) {
+          diagnosticBadge.className = "badge badge-good";
+          diagnosticText.textContent =
+            "Precio muy alineado con el valor material (poco inflado).";
+        } else if (margenPctCoste <= 100) {
+          diagnosticBadge.className = "badge badge-warning";
+          diagnosticText.textContent =
+            "Sobreprecio moderado frente al valor material.";
+        } else {
+          diagnosticBadge.className = "badge badge-danger";
+          diagnosticText.textContent =
+            "Precio muy por encima del valor material (posible sobreprecio).";
+        }
+      }
+
+      // ==============================
+      // EXPORT CSV
+      // ==============================
+      function exportToCsv() {
+        const headers = [
+          "Material",
+          "Tipo",
+          "Unidad",
+          "Peso",
+          "Coste unitario",
+          "Coste total",
+          "Precio venta",
+          "Margen €",
+          "Margen % vs coste",
+          "Origen peso"
+        ];
+        const rows = [headers];
+
+        state.lines.forEach((l) => {
+          rows.push([
+            l.material,
+            l.tipo,
+            l.unidad,
+            l.peso,
+            l.costeUnitario,
+            l.costeTotal,
+            l.precioVenta,
+            l.margen,
+            l.margenPctCoste,
+            l.pesoEstimado ? "estimado" : "manual"
+          ]);
+        });
+
+        const { totalCoste, totalVenta, margen, margenPctCoste } =
+          getGlobalMetrics();
+
+        rows.push([]);
+        rows.push(["RESUMEN"]);
+        rows.push(["Coste total", totalCoste]);
+        rows.push(["Precio venta total", totalVenta]);
+        rows.push(["Margen total", margen]);
+        rows.push(["Margen total % vs coste", margenPctCoste]);
+
+        const csvContent = rows
+          .map((r) => r.map((v) => `"${String(v ?? "")}"`).join(","))
+          .join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "safire_appraisal_v22.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // ==============================
+      // PLANTILLAS RÁPIDAS
+      // ==============================
+      function applyTemplate(name) {
+        if (!name) return;
+        if (!confirm("Esto reemplazará las líneas actuales. ¿Continuar?")) {
+          templateSelect.value = "";
+          return;
+        }
+        state.lines = [];
+        state.nextId = 1;
+
+        if (name === "solitario") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g"
+            })
+          );
+          state.lines.push(
+            createEmptyLine({
+              material: "Diamante",
+              tipo: "piedra",
+              unidad: "€/ct"
+            })
+          );
+        } else if (name === "alianza") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g"
+            })
+          );
+        } else if (name === "reloj_acero") {
+          state.lines.push(
+            createEmptyLine({
+              material: "Otro metal",
+              tipo: "metal",
+              unidad: "€/g"
+            })
+          );
+          state.lines.push(
+            createEmptyLine({
+              material: "Zafiro",
+              tipo: "piedra",
+              unidad: "€/ct"
+            })
+          );
+        }
+
+        render();
+        templateSelect.value = "";
+      }
+
+      // ==============================
+      // CÁLCULO POR DIMENSIONES
+      // ==============================
+      function openDimensionsModal() {
+        // poblar select de línea
+        dimLineSelect.innerHTML = "";
+        state.lines.forEach((l, idx) => {
+          const opt = document.createElement("option");
+          opt.value = l.id;
+          opt.textContent = (idx + 1) + " · " + l.material;
+          dimLineSelect.appendChild(opt);
+        });
+        dimLargo.value = "";
+        dimAncho.value = "";
+        dimAlto.value = "";
+        dimDensityMode.value = "material";
+        dimensionsModal.style.display = "flex";
+      }
+
+      function closeDimensionsModal() {
+        dimensionsModal.style.display = "none";
+      }
+
+      function applyDimensionsToLine() {
+        const lineId = parseInt(dimLineSelect.value, 10);
+        const largo = parseFloat(dimLargo.value) || 0;
+        const ancho = parseFloat(dimAncho.value) || 0;
+        const alto = parseFloat(dimAlto.value) || 0;
+        if (!lineId || !largo || !ancho || !alto) {
+          alert("Introduce largo, ancho y alto en cm.");
+          return;
+        }
+        const line = state.lines.find((l) => l.id === lineId);
+        if (!line) return;
+
+        const volume = largo * ancho * alto; // cm3
+        let density = STD_DENSITY;
+        if (dimDensityMode.value === "material") {
+          const master = getMasterFor(line.material);
+          density = (master && master.densidad) || STD_DENSITY;
+        }
+        const weightGrams = volume * density;
+
+        // Aplicamos peso en la unidad actual sin convertir (tú ya sabes si son g o ct)
+        line.peso = weightGrams.toFixed(3);
+        line.pesoEstimado = true;
+        recalcLine(line);
+        render();
+        closeDimensionsModal();
+      }
+
+      // ==============================
+      // EVENTOS GLOBALES
+      // ==============================
+      modeToggle.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const mode = btn.getAttribute("data-mode");
+          if (mode === state.mode) return;
+          state.mode = mode;
+
+          modeToggle.querySelectorAll("button").forEach((b) => {
+            b.classList.toggle(
+              "active",
+              b.getAttribute("data-mode") === state.mode
+            );
+          });
+
+          render();
+        });
+      });
+
+      addLineBtn.addEventListener("click", () => {
+        state.lines.push(createEmptyLine());
+        render();
+      });
+
+      resetBtn.addEventListener("click", () => {
+        if (!confirm("¿Seguro que quieres vaciar todo?")) return;
+        state.nextId = 1;
+        initStateFresh();
+        render();
+      });
+
+      currencySelect.addEventListener("change", (e) => {
+        state.currency = e.target.value;
+        render();
+      });
+
+      templateSelect.addEventListener("change", (e) => {
+        applyTemplate(e.target.value);
+      });
+
+      saveSnapshotBtn.addEventListener("click", () => {
+        const name =
+          prompt(
+            "Nombre para esta comparación (ej: 'Solitario cliente X')"
+          ) || "";
+        if (!name.trim()) return;
+        saveSnapshotToHistory(name.trim());
+      });
+
+      historySelect.addEventListener("change", (e) => {
+        const id = e.target.value;
+        if (!id) return;
+        applySnapshot(id);
+      });
+
+      exportCsvBtn.addEventListener("click", exportToCsv);
+
+      dimensionsBtn.addEventListener("click", openDimensionsModal);
+      dimCancelBtn.addEventListener("click", closeDimensionsModal);
+      dimApplyBtn.addEventListener("click", applyDimensionsToLine);
+
+      // Cerrar modal si clicas fuera
+      dimensionsModal.addEventListener("click", (e) => {
+        if (e.target === dimensionsModal) {
+          closeDimensionsModal();
+        }
+      });
+
+      // ==============================
+      // BOOTSTRAP
+      // ==============================
+      // Cargar historial y último estado
+      loadHistoryFromLocalStorage();
+      refreshHistorySelect();
+
+      const hasCurrent = loadCurrentFromLocalStorage();
+      if (!hasCurrent) {
+        initStateFresh();
+      } else {
+        currencySelect.value = state.currency;
+        modeToggle.querySelectorAll("button").forEach((btn) => {
+          const m = btn.getAttribute("data-mode");
+          btn.classList.toggle("active", m === state.mode);
+        });
+      }
+
+      render();
+    </script>
   </body>
 </html>
