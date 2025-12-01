@@ -268,6 +268,67 @@
         margin-left: 0.25rem;
       }
 
+      /* Wizard */
+      .wizard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+      }
+
+      .wizard-steps {
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      .wizard-step-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        font-size: 0.8rem;
+        opacity: 0.6;
+      }
+
+      .wizard-step-pill.active {
+        border-color: #45a29e;
+        background: rgba(69, 162, 158, 0.15);
+        opacity: 1;
+      }
+
+      .wizard-step-pill span.step-index {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+      }
+
+      .wizard-step-pill.active span.step-index {
+        border-color: #66fcf1;
+        background: #45a29e;
+        color: #0b0c10;
+      }
+
+      .wizard-step {
+        display: none;
+      }
+
+      .wizard-step.active {
+        display: block;
+      }
+
+      .wizard-nav {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1rem;
+      }
+
       /* Modal simple para cálculo por dimensiones */
       .modal-backdrop {
         position: fixed;
@@ -321,12 +382,18 @@
         h1 {
           font-size: 1.3rem;
         }
+
+        .wizard-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
       }
     </style>
   </head>
   <body>
     <div class="card">
-      <!-- Cabecera -->
+      <!-- Cabecera general -->
       <div
         class="row"
         style="justify-content: space-between; margin-bottom: 0.5rem;"
@@ -336,16 +403,6 @@
           <div class="sub">
             Comparador de costes vs precio de venta para joyería / relojería.
           </div>
-          <div class="row">
-            <div class="pill-toggle" id="modeToggle">
-              <button data-mode="basic" class="active">Modo básico</button>
-              <button data-mode="advanced">Modo avanzado</button>
-            </div>
-            <span class="hint">
-              Básico: rápido y guiado. Avanzado: añade mano de obra y unidades
-              técnicas.
-            </span>
-          </div>
         </div>
         <div class="chip-group">
           <div class="chip highlight">EUR / g · ct · dwt · ozt · ud</div>
@@ -354,50 +411,124 @@
         </div>
       </div>
 
-      <!-- Ficha de pieza (marca / tipo / modelo) -->
-      <div class="row" id="pieceMetaRow">
-        <label class="hint" style="flex: 1 1 160px;">
-          Tipo de pieza:
-          <select id="pieceTypeSelect">
-            <option value="">— Seleccionar —</option>
-            <option value="anillo">Anillo</option>
-            <option value="alianza">Alianza</option>
-            <option value="pendientes">Pendientes</option>
-            <option value="collar">Collar</option>
-            <option value="cadena">Cadena</option>
-            <option value="pulsera">Pulsera</option>
-            <option value="reloj">Reloj</option>
-            <option value="otro">Otro</option>
-          </select>
-        </label>
-        <label class="hint" style="flex: 1 1 160px;">
-          Marca:
-          <input id="brandInput" type="text" placeholder="Cartier, Rolex..." />
-        </label>
-        <label class="hint" style="flex: 1 1 160px;">
-          Modelo / referencia:
-          <input id="modelInput" type="text" placeholder="Ref. interna..." />
-        </label>
+      <!-- Wizard header -->
+      <div class="wizard-header">
+        <div class="wizard-steps" id="wizardSteps">
+          <div class="wizard-step-pill" data-step="1">
+            <span class="step-index">1</span>
+            <span>Ficha</span>
+          </div>
+          <div class="wizard-step-pill" data-step="2">
+            <span class="step-index">2</span>
+            <span>Materiales</span>
+          </div>
+          <div class="wizard-step-pill" data-step="3">
+            <span class="step-index">3</span>
+            <span>Resultado</span>
+          </div>
+        </div>
+        <div class="pill-toggle" id="modeToggle">
+          <button data-mode="basic" class="active">Modo básico</button>
+          <button data-mode="advanced">Modo avanzado</button>
+        </div>
       </div>
 
-      <!-- Barra de opciones globales -->
-      <div class="row" style="justify-content: space-between;">
+      <!-- Paso 1: FICHA DE PIEZA -->
+      <div id="step1" class="wizard-step active">
         <div class="row">
-          <label class="hint">
-            Divisa:&nbsp;
-            <select id="currencySelect" title="Solo afecta al formato">
-              <option value="EUR">EUR €</option>
-              <option value="USD">USD $</option>
+          <span class="hint">
+            Paso 1 · Describe la pieza y elige modo. Después podrás ajustar
+            materiales y mano de obra.
+          </span>
+        </div>
+
+        <div class="row" id="pieceMetaRow">
+          <label class="hint" style="flex: 1 1 160px;">
+            Tipo de pieza:
+            <select id="pieceTypeSelect">
+              <option value="">— Seleccionar —</option>
+              <option value="anillo">Anillo</option>
+              <option value="alianza">Alianza</option>
+              <option value="pendientes">Pendientes</option>
+              <option value="collar">Collar</option>
+              <option value="cadena">Cadena</option>
+              <option value="pulsera">Pulsera</option>
+              <option value="reloj">Reloj</option>
+              <option value="otro">Otro</option>
             </select>
           </label>
-          <label class="hint">
-            Plantilla rápida:&nbsp;
-            <select id="templateSelect">
-              <option value="">— Vacía —</option>
-            </select>
+          <label class="hint" style="flex: 1 1 160px;">
+            Marca:
+            <input
+              id="brandInput"
+              type="text"
+              placeholder="Cartier, Rolex..."
+            />
+          </label>
+          <label class="hint" style="flex: 1 1 160px;">
+            Modelo / referencia:
+            <input id="modelInput" type="text" placeholder="Ref. interna..." />
           </label>
         </div>
+
+        <div class="row" style="justify-content: space-between;">
+          <div class="row">
+            <label class="hint">
+              Divisa:&nbsp;
+              <select id="currencySelect" title="Solo afecta al formato">
+                <option value="EUR">EUR €</option>
+                <option value="USD">USD $</option>
+              </select>
+            </label>
+            <label class="hint">
+              Plantilla rápida:&nbsp;
+              <select id="templateSelect">
+                <option value="">— Vacía —</option>
+              </select>
+            </label>
+          </div>
+          <span class="hint">
+            Elige una plantilla para pre-rellenar pesos estándar de la pieza.
+          </span>
+        </div>
+
+        <div class="wizard-nav">
+          <div></div>
+          <button class="btn btn-primary" id="toStep2Btn">
+            Siguiente · Materiales →
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 2: MATERIALES Y MANO DE OBRA -->
+      <div id="step2" class="wizard-step">
         <div class="row">
+          <span class="hint">
+            Paso 2 · Ajusta materiales, costes unitarios y añade mano de obra si
+            usas modo avanzado.
+          </span>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Tipo</th>
+                <th>Unidad</th>
+                <th>Peso</th>
+                <th>Coste unit.</th>
+                <th>Coste línea</th>
+                <th>Origen peso</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="linesBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Cálculo por dimensiones -->
+        <div class="row" style="margin-top: 0.75rem;">
           <button
             class="btn btn-ghost"
             id="dimensionsBtn"
@@ -405,120 +536,146 @@
           >
             ⚙ Calc. peso por dimensiones
           </button>
-          <button
-            class="btn btn-ghost"
-            id="saveSnapshotBtn"
-            title="Guardar esta comparación en el historial"
-          >
-            💾 Guardar comparación
-          </button>
-          <label class="hint">
-            Historial:
-            <select id="historySelect">
-              <option value="">— Ninguna —</option>
+          <span class="hint">
+            Usa dimensiones físicas (largo, ancho, alto) para estimar peso
+            cuando no lo conoces.
+          </span>
+        </div>
+
+        <!-- Mano de obra (solo avanzado) -->
+        <div
+          id="laborSection"
+          class="row"
+          style="margin-top: 0.75rem; display: none;"
+        >
+          <span class="hint" style="flex-basis: 100%;">
+            Mano de obra (solo avanzado): añade el trabajo (engastado,
+            ensamblado, acabados...) como una línea más. La tarifa por defecto
+            depende de la dificultad.
+          </span>
+          <label class="hint" style="flex: 1 1 120px;">
+            Dificultad:
+            <select id="laborDifficultySelect">
+              <option value="sencilla">Sencilla</option>
+              <option value="media" selected>Media</option>
+              <option value="compleja">Compleja</option>
             </select>
           </label>
-          <button
-            class="btn btn-ghost"
-            id="exportCsvBtn"
-            title="Exportar a CSV"
-          >
-            ⬇ CSV
+          <label class="hint" style="flex: 1 1 120px;">
+            Tarifa mano de obra (€/h):
+            <input
+              id="laborRateInput"
+              type="number"
+              step="1"
+              min="0"
+              placeholder="60"
+            />
+          </label>
+          <label class="hint" style="flex: 1 1 120px;">
+            Horas estimadas:
+            <input
+              id="laborHoursInput"
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="1.0"
+            />
+          </label>
+          <button class="btn btn-ghost" id="addLaborBtn">
+            + Añadir línea de mano de obra
+          </button>
+        </div>
+
+        <!-- Acciones de tabla -->
+        <div
+          class="row"
+          style="margin-top: 0.75rem; justify-content: space-between;"
+        >
+          <div class="row">
+            <button class="btn btn-primary" id="addLineBtn">
+              + Añadir material
+            </button>
+            <button class="btn btn-ghost" id="resetBtn" title="Vaciar todo">
+              Reiniciar
+            </button>
+          </div>
+          <span class="hint">
+            Añade tantos materiales y líneas de mano de obra como necesites.
+          </span>
+        </div>
+
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" id="backToStep1Btn">
+            ← Volver a ficha
+          </button>
+          <button class="btn btn-primary" id="toStep3Btn">
+            Siguiente · Resultado →
           </button>
         </div>
       </div>
 
-      <!-- Tabla principal -->
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Material</th>
-              <th>Tipo</th>
-              <th>Unidad</th>
-              <th>Peso</th>
-              <th>Coste unit.</th>
-              <th>Coste línea</th>
-              <th>Origen peso</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="linesBody"></tbody>
-        </table>
-      </div>
-
-      <!-- Sección mano de obra (solo avanzado, debajo de materiales) -->
-      <div
-        id="laborSection"
-        class="row"
-        style="margin-top: 0.75rem; display: none;"
-      >
-        <span class="hint" style="flex-basis: 100%;">
-          Mano de obra (solo avanzado): añade el trabajo (engastado, ensamblado,
-          acabados...) como una línea más. La tarifa por defecto depende de la
-          dificultad.
-        </span>
-        <label class="hint" style="flex: 1 1 120px;">
-          Dificultad:
-          <select id="laborDifficultySelect">
-            <option value="sencilla">Sencilla</option>
-            <option value="media" selected>Media</option>
-            <option value="compleja">Compleja</option>
-          </select>
-        </label>
-        <label class="hint" style="flex: 1 1 120px;">
-          Tarifa mano de obra (€/h):
-          <input
-            id="laborRateInput"
-            type="number"
-            step="1"
-            min="0"
-            placeholder="60"
-          />
-        </label>
-        <label class="hint" style="flex: 1 1 120px;">
-          Horas estimadas:
-          <input
-            id="laborHoursInput"
-            type="number"
-            step="0.1"
-            min="0"
-            placeholder="1.0"
-          />
-        </label>
-        <button class="btn btn-ghost" id="addLaborBtn">
-          + Añadir línea de mano de obra
-        </button>
-      </div>
-
-      <!-- Acciones y diagnóstico -->
-      <div
-        class="row"
-        style="margin-top: 0.75rem; justify-content: space-between;"
-      >
+      <!-- Paso 3: RESULTADO Y DIAGNÓSTICO -->
+      <div id="step3" class="wizard-step">
         <div class="row">
-          <button class="btn btn-primary" id="addLineBtn">
-            + Añadir material
-          </button>
-          <button class="btn btn-ghost" id="resetBtn" title="Vaciar todo">
-            Reiniciar
-          </button>
+          <span class="hint">
+            Paso 3 · Introduce el precio de venta del producto y revisa márgenes,
+            diagnóstico y opciones de export / historial.
+          </span>
         </div>
-        <div class="badge badge-good" id="diagnosticBadge">
-          <span class="badge-dot"></span>
-          <span id="diagnosticText">Sin datos suficientes</span>
+
+        <!-- Resumen -->
+        <div class="summary" id="summaryBar"></div>
+
+        <!-- Diagnóstico -->
+        <div class="row" style="margin-top: 0.75rem;">
+          <div class="badge badge-good" id="diagnosticBadge">
+            <span class="badge-dot"></span>
+            <span id="diagnosticText">Sin datos suficientes</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Resumen -->
-      <div class="summary" id="summaryBar"></div>
+        <!-- Historial / export -->
+        <div class="row" style="margin-top: 0.75rem; justify-content: space-between;">
+          <div class="row">
+            <button
+              class="btn btn-ghost"
+              id="saveSnapshotBtn"
+              title="Guardar esta comparación en el historial"
+            >
+              💾 Guardar comparación
+            </button>
+            <label class="hint">
+              Historial:
+              <select id="historySelect">
+                <option value="">— Ninguna —</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <button
+              class="btn btn-ghost"
+              id="exportCsvBtn"
+              title="Exportar a CSV"
+            >
+              ⬇ Exportar CSV
+            </button>
+          </div>
+        </div>
 
-      <div style="margin-top: 0.75rem;">
-        <span class="hint">
-          * El margen % se calcula vs coste total (materiales + mano de obra).
-          Cuanto mayor sea, más "inflado" está el precio frente al valor
-          material.
-        </span>
+        <div style="margin-top: 0.75rem;">
+          <span class="hint">
+            * El margen % se calcula vs coste total (materiales + mano de obra).
+            Cuanto mayor sea, más "inflado" está el precio frente al valor
+            material.
+          </span>
+        </div>
+
+        <div class="wizard-nav">
+          <button class="btn btn-ghost" id="backToStep2Btn">
+            ← Volver a materiales
+          </button>
+          <div></div>
+        </div>
       </div>
     </div>
 
@@ -676,7 +833,8 @@
         nextId: 1,
         snapshots: [],
         salePriceTotal: "",
-        selectedTemplateId: "" // nueva: plantilla actualmente elegida
+        selectedTemplateId: "",
+        currentStep: 1
       };
 
       // Elementos DOM
@@ -712,6 +870,15 @@
       const brandInput = document.getElementById("brandInput");
       const modelInput = document.getElementById("modelInput");
 
+      const wizardSteps = document.getElementById("wizardSteps");
+      const step1El = document.getElementById("step1");
+      const step2El = document.getElementById("step2");
+      const step3El = document.getElementById("step3");
+      const toStep2Btn = document.getElementById("toStep2Btn");
+      const toStep3Btn = document.getElementById("toStep3Btn");
+      const backToStep1Btn = document.getElementById("backToStep1Btn");
+      const backToStep2Btn = document.getElementById("backToStep2Btn");
+
       // ==============================
       // UTILIDADES
       // ==============================
@@ -740,6 +907,7 @@
       function initStateFresh() {
         state.lines = [createEmptyLine()];
         state.salePriceTotal = "";
+        state.selectedTemplateId = "";
       }
 
       function formatCurrency(n) {
@@ -816,7 +984,8 @@
           lines: state.lines,
           nextId: state.nextId,
           salePriceTotal: state.salePriceTotal,
-          selectedTemplateId: state.selectedTemplateId
+          selectedTemplateId: state.selectedTemplateId,
+          currentStep: state.currentStep
         };
         try {
           localStorage.setItem(LS_CURRENT_KEY, JSON.stringify(payload));
@@ -838,6 +1007,7 @@
           state.nextId = data.nextId || state.lines.length + 1;
           state.salePriceTotal = data.salePriceTotal || "";
           state.selectedTemplateId = data.selectedTemplateId || "";
+          state.currentStep = data.currentStep || 1;
           return true;
         } catch (e) {
           return false;
@@ -967,7 +1137,6 @@
         } else {
           templateSelect.value = "";
           if (type) {
-            // si el tipo ha cambiado y ya no aplica la plantilla, limpiamos selección
             state.selectedTemplateId = "";
           }
         }
@@ -976,12 +1145,11 @@
       function applyTemplate(name) {
         if (!name) return;
         if (!confirm("Esto reemplazará las líneas actuales. ¿Continuar?")) {
-          // si cancela, devolvemos el select a la plantilla anterior
           templateSelect.value = state.selectedTemplateId || "";
           return;
         }
 
-        state.selectedTemplateId = name; // recordar plantilla elegida
+        state.selectedTemplateId = name;
         state.lines = [];
         state.nextId = 1;
 
@@ -1213,7 +1381,7 @@
           tdUnidad.appendChild(selUnidad);
           tr.appendChild(tdUnidad);
 
-          // Pre-creamos la celda de coste línea para poder actualizarla en los inputs
+          // Coste línea (lo creamos antes para actualizarlo desde inputs)
           const tdCt = document.createElement("td");
           tdCt.style.fontWeight = "600";
           tdCt.textContent = formatCurrency(line.costeTotal);
@@ -1277,7 +1445,7 @@
           tdCu.appendChild(cuWrapper);
           tr.appendChild(tdCu);
 
-          // Coste línea (ya creado arriba)
+          // Coste línea
           tr.appendChild(tdCt);
 
           // Origen peso
@@ -1520,6 +1688,26 @@
       }
 
       // ==============================
+      // WIZARD (PANTALLAS)
+      // ==============================
+      function setStep(step) {
+        state.currentStep = step;
+
+        step1El.classList.toggle("active", step === 1);
+        step2El.classList.toggle("active", step === 2);
+        step3El.classList.toggle("active", step === 3);
+
+        wizardSteps
+          .querySelectorAll(".wizard-step-pill")
+          .forEach((pill) => {
+            const s = parseInt(pill.getAttribute("data-step"), 10);
+            pill.classList.toggle("active", s === step);
+          });
+
+        saveCurrentToLocalStorage();
+      }
+
+      // ==============================
       // EVENTOS GLOBALES
       // ==============================
       modeToggle.querySelectorAll("button").forEach((btn) => {
@@ -1561,6 +1749,7 @@
         initStateFresh();
         refreshTemplateOptions();
         render();
+        setStep(1);
       });
 
       currencySelect.addEventListener("change", (e) => {
@@ -1656,6 +1845,23 @@
         softUpdateAfterInput();
       });
 
+      // Navegación de pasos
+      toStep2Btn.addEventListener("click", () => {
+        setStep(2);
+      });
+
+      toStep3Btn.addEventListener("click", () => {
+        setStep(3);
+      });
+
+      backToStep1Btn.addEventListener("click", () => {
+        setStep(1);
+      });
+
+      backToStep2Btn.addEventListener("click", () => {
+        setStep(2);
+      });
+
       // ==============================
       // BOOTSTRAP
       // ==============================
@@ -1665,6 +1871,7 @@
       const hasCurrent = loadCurrentFromLocalStorage();
       if (!hasCurrent) {
         initStateFresh();
+        state.currentStep = 1;
       } else {
         currencySelect.value = state.currency;
         pieceTypeSelect.value = state.pieceType;
@@ -1682,6 +1889,7 @@
 
       refreshTemplateOptions();
       render();
+      setStep(state.currentStep || 1);
     </script>
   </body>
 </html>
