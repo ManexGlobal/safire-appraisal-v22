@@ -675,7 +675,8 @@
         lines: [],
         nextId: 1,
         snapshots: [],
-        salePriceTotal: "" // precio venta del producto
+        salePriceTotal: "",
+        selectedTemplateId: "" // nueva: plantilla actualmente elegida
       };
 
       // Elementos DOM
@@ -814,7 +815,8 @@
           model: state.model,
           lines: state.lines,
           nextId: state.nextId,
-          salePriceTotal: state.salePriceTotal
+          salePriceTotal: state.salePriceTotal,
+          selectedTemplateId: state.selectedTemplateId
         };
         try {
           localStorage.setItem(LS_CURRENT_KEY, JSON.stringify(payload));
@@ -835,6 +837,7 @@
           state.lines = data.lines;
           state.nextId = data.nextId || state.lines.length + 1;
           state.salePriceTotal = data.salePriceTotal || "";
+          state.selectedTemplateId = data.selectedTemplateId || "";
           return true;
         } catch (e) {
           return false;
@@ -854,7 +857,8 @@
             model: state.model,
             lines: state.lines,
             nextId: state.nextId,
-            salePriceTotal: state.salePriceTotal
+            salePriceTotal: state.salePriceTotal,
+            selectedTemplateId: state.selectedTemplateId
           }
         };
         let history = [];
@@ -918,6 +922,7 @@
         state.lines = snap.data.lines || [];
         state.nextId = snap.data.nextId || state.lines.length + 1;
         state.salePriceTotal = snap.data.salePriceTotal || "";
+        state.selectedTemplateId = snap.data.selectedTemplateId || "";
 
         currencySelect.value = state.currency;
         pieceTypeSelect.value = state.pieceType;
@@ -943,22 +948,40 @@
         templateSelect.innerHTML =
           '<option value="">— Vacía —</option>';
         const type = state.pieceType;
+        let hasSelected = false;
+
         TEMPLATE_DEFS.forEach((tpl) => {
           if (!type || tpl.types.includes(type)) {
             const opt = document.createElement("option");
             opt.value = tpl.id;
             opt.textContent = tpl.label;
+            if (tpl.id === state.selectedTemplateId) {
+              hasSelected = true;
+            }
             templateSelect.appendChild(opt);
           }
         });
+
+        if (hasSelected) {
+          templateSelect.value = state.selectedTemplateId;
+        } else {
+          templateSelect.value = "";
+          if (type) {
+            // si el tipo ha cambiado y ya no aplica la plantilla, limpiamos selección
+            state.selectedTemplateId = "";
+          }
+        }
       }
 
       function applyTemplate(name) {
         if (!name) return;
         if (!confirm("Esto reemplazará las líneas actuales. ¿Continuar?")) {
-          templateSelect.value = "";
+          // si cancela, devolvemos el select a la plantilla anterior
+          templateSelect.value = state.selectedTemplateId || "";
           return;
         }
+
+        state.selectedTemplateId = name; // recordar plantilla elegida
         state.lines = [];
         state.nextId = 1;
 
@@ -1076,7 +1099,7 @@
         }
 
         refreshTemplateOptions();
-        templateSelect.value = "";
+        templateSelect.value = state.selectedTemplateId;
         render();
       }
 
@@ -1190,6 +1213,11 @@
           tdUnidad.appendChild(selUnidad);
           tr.appendChild(tdUnidad);
 
+          // Pre-creamos la celda de coste línea para poder actualizarla en los inputs
+          const tdCt = document.createElement("td");
+          tdCt.style.fontWeight = "600";
+          tdCt.textContent = formatCurrency(line.costeTotal);
+
           // Peso + unidad visual
           const tdPeso = document.createElement("td");
           const pesoWrapper = document.createElement("div");
@@ -1205,6 +1233,8 @@
           inpPeso.addEventListener("input", (e) => {
             line.peso = e.target.value;
             line.pesoEstimado = false;
+            recalcLine(line);
+            tdCt.textContent = formatCurrency(line.costeTotal);
             softUpdateAfterInput();
           });
           const pesoUnitSpan = document.createElement("span");
@@ -1235,6 +1265,8 @@
             "Coste unitario del material (precio spot o tu referencia €/g, €/ct, etc.)";
           inpCu.addEventListener("input", (e) => {
             line.costeUnitario = e.target.value;
+            recalcLine(line);
+            tdCt.textContent = formatCurrency(line.costeTotal);
             softUpdateAfterInput();
           });
           const cuUnitSpan = document.createElement("span");
@@ -1245,10 +1277,7 @@
           tdCu.appendChild(cuWrapper);
           tr.appendChild(tdCu);
 
-          // Coste línea
-          const tdCt = document.createElement("td");
-          tdCt.style.fontWeight = "600";
-          tdCt.textContent = formatCurrency(line.costeTotal);
+          // Coste línea (ya creado arriba)
           tr.appendChild(tdCt);
 
           // Origen peso
@@ -1524,9 +1553,11 @@
         state.pieceType = "";
         state.brand = "";
         state.model = "";
+        state.selectedTemplateId = "";
         pieceTypeSelect.value = "";
         brandInput.value = "";
         modelInput.value = "";
+        templateSelect.value = "";
         initStateFresh();
         refreshTemplateOptions();
         render();
