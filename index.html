@@ -166,6 +166,18 @@
         text-align: right;
       }
 
+      .input-with-unit {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .input-with-unit span.unit-label {
+        font-size: 0.7rem;
+        color: #c5c6c7;
+        white-space: nowrap;
+      }
+
       .btn {
         border-radius: 999px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -254,27 +266,6 @@
         border: 1px dashed #ffb347;
         color: #ffb347;
         margin-left: 0.25rem;
-      }
-
-      .ai-panel textarea {
-        width: 100%;
-        min-height: 80px;
-        resize: vertical;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        padding: 0.35rem 0.45rem;
-        background: rgba(10, 15, 25, 0.9);
-        color: #f5f5f5;
-        font-size: 0.8rem;
-        box-sizing: border-box;
-      }
-
-      .ai-panel {
-        margin-top: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px dashed rgba(255, 255, 255, 0.12);
       }
 
       /* Modal simple para cálculo por dimensiones */
@@ -403,19 +394,6 @@
             Plantilla rápida:&nbsp;
             <select id="templateSelect">
               <option value="">— Vacía —</option>
-              <option value="solitario_ligero">
-                Solitario ligero (3.5 g oro + 0.20 ct)
-              </option>
-              <option value="solitario_potente">
-                Solitario potente (4.5 g oro + 0.35 ct)
-              </option>
-              <option value="alianza_fina">Alianza fina (3.0 g)</option>
-              <option value="alianza_ancha">Alianza ancha (6.0 g)</option>
-              <option value="cadena_fina">Cadena fina 45 cm (6.0 g)</option>
-              <option value="cadena_gruesa">
-                Cadena gruesa 60 cm (15.0 g)
-              </option>
-              <option value="reloj_acero">Reloj acero + zafiro</option>
             </select>
           </label>
         </div>
@@ -450,7 +428,26 @@
         </div>
       </div>
 
-      <!-- Sección mano de obra (solo avanzado) -->
+      <!-- Tabla principal -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Tipo</th>
+              <th>Unidad</th>
+              <th>Peso</th>
+              <th>Coste unit.</th>
+              <th>Coste línea</th>
+              <th>Origen peso</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="linesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Sección mano de obra (solo avanzado, debajo de materiales) -->
       <div
         id="laborSection"
         class="row"
@@ -458,7 +455,8 @@
       >
         <span class="hint" style="flex-basis: 100%;">
           Mano de obra (solo avanzado): añade el trabajo (engastado, ensamblado,
-          acabados...) como una línea más.
+          acabados...) como una línea más. La tarifa por defecto depende de la
+          dificultad.
         </span>
         <label class="hint" style="flex: 1 1 120px;">
           Dificultad:
@@ -475,7 +473,7 @@
             type="number"
             step="1"
             min="0"
-            placeholder="50"
+            placeholder="60"
           />
         </label>
         <label class="hint" style="flex: 1 1 120px;">
@@ -491,25 +489,6 @@
         <button class="btn btn-ghost" id="addLaborBtn">
           + Añadir línea de mano de obra
         </button>
-      </div>
-
-      <!-- Tabla principal -->
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Material</th>
-              <th>Tipo</th>
-              <th>Unidad</th>
-              <th>Peso</th>
-              <th>Coste unit.</th>
-              <th>Coste total</th>
-              <th>Origen peso</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="linesBody"></tbody>
-        </table>
       </div>
 
       <!-- Acciones y diagnóstico -->
@@ -638,6 +617,52 @@
 
       const STD_DENSITY = 2.7; // g/cm3 genérica
 
+      // Plantillas con categorías
+      const TEMPLATE_DEFS = [
+        {
+          id: "solitario_ligero",
+          label: "Solitario ligero (3.5 g oro + 0.20 ct)",
+          types: ["anillo"]
+        },
+        {
+          id: "solitario_potente",
+          label: "Solitario potente (4.5 g oro + 0.35 ct)",
+          types: ["anillo"]
+        },
+        {
+          id: "alianza_fina",
+          label: "Alianza fina (3.0 g)",
+          types: ["anillo", "alianza"]
+        },
+        {
+          id: "alianza_ancha",
+          label: "Alianza ancha (6.0 g)",
+          types: ["anillo", "alianza"]
+        },
+        {
+          id: "cadena_fina",
+          label: "Cadena fina 45 cm (6.0 g)",
+          types: ["cadena", "collar"]
+        },
+        {
+          id: "cadena_gruesa",
+          label: "Cadena gruesa 60 cm (15.0 g)",
+          types: ["cadena", "collar"]
+        },
+        {
+          id: "reloj_acero",
+          label: "Reloj acero + zafiro",
+          types: ["reloj"]
+        }
+      ];
+
+      // Tarifas estándar de mano de obra por dificultad
+      const LABOR_DEFAULT_RATES = {
+        sencilla: 40,
+        media: 60,
+        compleja: 90
+      };
+
       // ==============================
       // ESTADO GLOBAL
       // ==============================
@@ -734,6 +759,22 @@
             maximumFractionDigits: 1
           }) + " %"
         );
+      }
+
+      function unitWeightLabel(unidad) {
+        switch (unidad) {
+          case "€/g":
+            return "g";
+          case "€/ct":
+            return "ct";
+          case "€/dwt":
+            return "dwt";
+          case "€/ozt":
+            return "ozt";
+          case "€/ud":
+          default:
+            return "ud";
+        }
       }
 
       // ==============================
@@ -887,8 +928,155 @@
           const m = btn.getAttribute("data-mode");
           btn.classList.toggle("active", m === state.mode);
         });
+
         laborSection.style.display =
           state.mode === "advanced" ? "flex" : "none";
+
+        refreshTemplateOptions();
+        render();
+      }
+
+      // ==============================
+      // PLANTILLAS
+      // ==============================
+      function refreshTemplateOptions() {
+        templateSelect.innerHTML =
+          '<option value="">— Vacía —</option>';
+        const type = state.pieceType;
+        TEMPLATE_DEFS.forEach((tpl) => {
+          if (!type || tpl.types.includes(type)) {
+            const opt = document.createElement("option");
+            opt.value = tpl.id;
+            opt.textContent = tpl.label;
+            templateSelect.appendChild(opt);
+          }
+        });
+      }
+
+      function applyTemplate(name) {
+        if (!name) return;
+        if (!confirm("Esto reemplazará las líneas actuales. ¿Continuar?")) {
+          templateSelect.value = "";
+          return;
+        }
+        state.lines = [];
+        state.nextId = 1;
+
+        if (name === "solitario_ligero") {
+          state.pieceType = "anillo";
+          pieceTypeSelect.value = "anillo";
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 3.5,
+              pesoEstimado: true
+            })
+          );
+          state.lines.push(
+            createEmptyLine({
+              material: "Diamante",
+              tipo: "piedra",
+              unidad: "€/ct",
+              peso: 0.2,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "solitario_potente") {
+          state.pieceType = "anillo";
+          pieceTypeSelect.value = "anillo";
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 4.5,
+              pesoEstimado: true
+            })
+          );
+          state.lines.push(
+            createEmptyLine({
+              material: "Diamante",
+              tipo: "piedra",
+              unidad: "€/ct",
+              peso: 0.35,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "alianza_fina") {
+          state.pieceType = "alianza";
+          pieceTypeSelect.value = "alianza";
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 3.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "alianza_ancha") {
+          state.pieceType = "alianza";
+          pieceTypeSelect.value = "alianza";
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 6.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "cadena_fina") {
+          state.pieceType = "cadena";
+          pieceTypeSelect.value = "cadena";
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 6.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "cadena_gruesa") {
+          state.pieceType = "cadena";
+          pieceTypeSelect.value = "cadena";
+          state.lines.push(
+            createEmptyLine({
+              material: "Oro 18k",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 15.0,
+              pesoEstimado: true
+            })
+          );
+        } else if (name === "reloj_acero") {
+          state.pieceType = "reloj";
+          pieceTypeSelect.value = "reloj";
+          state.lines.push(
+            createEmptyLine({
+              material: "Acero 316L",
+              tipo: "metal",
+              unidad: "€/g",
+              peso: 80.0,
+              pesoEstimado: true
+            })
+          );
+          state.lines.push(
+            createEmptyLine({
+              material: "Zafiro",
+              tipo: "piedra",
+              unidad: "€/ct",
+              peso: 0.1,
+              pesoEstimado: true
+            })
+          );
+        }
+
+        refreshTemplateOptions();
+        templateSelect.value = "";
         render();
       }
 
@@ -959,11 +1147,7 @@
           });
           selTipo.value = line.tipo;
           const master = getMasterFor(line.material);
-          if (master) {
-            selTipo.disabled = true;
-          } else {
-            selTipo.disabled = false;
-          }
+          selTipo.disabled = !!master;
           selTipo.addEventListener("change", (e) => {
             if (getMasterFor(line.material)) return;
             line.tipo = e.target.value;
@@ -1006,8 +1190,10 @@
           tdUnidad.appendChild(selUnidad);
           tr.appendChild(tdUnidad);
 
-          // Peso
+          // Peso + unidad visual
           const tdPeso = document.createElement("td");
+          const pesoWrapper = document.createElement("div");
+          pesoWrapper.className = "input-with-unit";
           const inpPeso = document.createElement("input");
           inpPeso.type = "number";
           inpPeso.step = "0.001";
@@ -1021,7 +1207,12 @@
             line.pesoEstimado = false;
             softUpdateAfterInput();
           });
-          tdPeso.appendChild(inpPeso);
+          const pesoUnitSpan = document.createElement("span");
+          pesoUnitSpan.className = "unit-label";
+          pesoUnitSpan.textContent = unitWeightLabel(line.unidad);
+          pesoWrapper.appendChild(inpPeso);
+          pesoWrapper.appendChild(pesoUnitSpan);
+          tdPeso.appendChild(pesoWrapper);
           if (line.pesoEstimado) {
             const tag = document.createElement("span");
             tag.className = "tag-estimado";
@@ -1030,23 +1221,33 @@
           }
           tr.appendChild(tdPeso);
 
-          // Coste unitario
+          // Coste unitario + unidad visual
           const tdCu = document.createElement("td");
+          const cuWrapper = document.createElement("div");
+          cuWrapper.className = "input-with-unit";
           const inpCu = document.createElement("input");
           inpCu.type = "number";
           inpCu.step = "0.01";
           inpCu.min = "0";
           inpCu.placeholder = "0.00";
           inpCu.value = line.costeUnitario;
+          inpCu.title =
+            "Coste unitario del material (precio spot o tu referencia €/g, €/ct, etc.)";
           inpCu.addEventListener("input", (e) => {
             line.costeUnitario = e.target.value;
             softUpdateAfterInput();
           });
-          tdCu.appendChild(inpCu);
+          const cuUnitSpan = document.createElement("span");
+          cuUnitSpan.className = "unit-label";
+          cuUnitSpan.textContent = line.unidad;
+          cuWrapper.appendChild(inpCu);
+          cuWrapper.appendChild(cuUnitSpan);
+          tdCu.appendChild(cuWrapper);
           tr.appendChild(tdCu);
 
-          // Coste total
+          // Coste línea
           const tdCt = document.createElement("td");
+          tdCt.style.fontWeight = "600";
           tdCt.textContent = formatCurrency(line.costeTotal);
           tr.appendChild(tdCt);
 
@@ -1112,7 +1313,6 @@
         inputPv.value =
           state.salePriceTotal !== "" ? state.salePriceTotal : "";
         inputPv.style.width = "110px";
-        // Usamos change (no input) para que no se pierda el foco en cada tecla
         inputPv.addEventListener("change", (e) => {
           state.salePriceTotal = e.target.value;
           softUpdateAfterInput();
@@ -1242,135 +1442,6 @@
       }
 
       // ==============================
-      // PLANTILLAS RÁPIDAS
-      // ==============================
-      function applyTemplate(name) {
-        if (!name) return;
-        if (!confirm("Esto reemplazará las líneas actuales. ¿Continuar?")) {
-          templateSelect.value = "";
-          return;
-        }
-        state.lines = [];
-        state.nextId = 1;
-
-        if (name === "solitario_ligero") {
-          state.pieceType = "anillo";
-          pieceTypeSelect.value = "anillo";
-          state.lines.push(
-            createEmptyLine({
-              material: "Oro 18k",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 3.5,
-              pesoEstimado: true
-            })
-          );
-          state.lines.push(
-            createEmptyLine({
-              material: "Diamante",
-              tipo: "piedra",
-              unidad: "€/ct",
-              peso: 0.2,
-              pesoEstimado: true
-            })
-          );
-        } else if (name === "solitario_potente") {
-          state.pieceType = "anillo";
-          pieceTypeSelect.value = "anillo";
-          state.lines.push(
-            createEmptyLine({
-              material: "Oro 18k",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 4.5,
-              pesoEstimado: true
-            })
-          );
-          state.lines.push(
-            createEmptyLine({
-              material: "Diamante",
-              tipo: "piedra",
-              unidad: "€/ct",
-              peso: 0.35,
-              pesoEstimado: true
-            })
-          );
-        } else if (name === "alianza_fina") {
-          state.pieceType = "alianza";
-          pieceTypeSelect.value = "alianza";
-          state.lines.push(
-            createEmptyLine({
-              material: "Oro 18k",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 3.0,
-              pesoEstimado: true
-            })
-          );
-        } else if (name === "alianza_ancha") {
-          state.pieceType = "alianza";
-          pieceTypeSelect.value = "alianza";
-          state.lines.push(
-            createEmptyLine({
-              material: "Oro 18k",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 6.0,
-              pesoEstimado: true
-            })
-          );
-        } else if (name === "cadena_fina") {
-          state.pieceType = "cadena";
-          pieceTypeSelect.value = "cadena";
-          state.lines.push(
-            createEmptyLine({
-              material: "Oro 18k",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 6.0,
-              pesoEstimado: true
-            })
-          );
-        } else if (name === "cadena_gruesa") {
-          state.pieceType = "cadena";
-          pieceTypeSelect.value = "cadena";
-          state.lines.push(
-            createEmptyLine({
-              material: "Oro 18k",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 15.0,
-              pesoEstimado: true
-            })
-          );
-        } else if (name === "reloj_acero") {
-          state.pieceType = "reloj";
-          pieceTypeSelect.value = "reloj";
-          state.lines.push(
-            createEmptyLine({
-              material: "Acero 316L",
-              tipo: "metal",
-              unidad: "€/g",
-              peso: 80.0,
-              pesoEstimado: true
-            })
-          );
-          state.lines.push(
-            createEmptyLine({
-              material: "Zafiro",
-              tipo: "piedra",
-              unidad: "€/ct",
-              peso: 0.1,
-              pesoEstimado: true
-            })
-          );
-        }
-
-        render();
-        templateSelect.value = "";
-      }
-
-      // ==============================
       // CÁLCULO POR DIMENSIONES
       // ==============================
       function openDimensionsModal() {
@@ -1457,6 +1528,7 @@
         brandInput.value = "";
         modelInput.value = "";
         initStateFresh();
+        refreshTemplateOptions();
         render();
       });
 
@@ -1498,7 +1570,10 @@
 
       addLaborBtn.addEventListener("click", () => {
         const difficulty = laborDifficultySelect.value;
-        const rate = parseFloat(laborRateInput.value) || 0;
+        const rate =
+          parseFloat(laborRateInput.value) ||
+          LABOR_DEFAULT_RATES[difficulty] ||
+          0;
         const hours = parseFloat(laborHoursInput.value) || 0;
         if (!rate || !hours) {
           alert("Introduce una tarifa y unas horas mayores que 0.");
@@ -1526,8 +1601,17 @@
         render();
       });
 
+      laborDifficultySelect.addEventListener("change", (e) => {
+        const diff = e.target.value;
+        if (!laborRateInput.value) {
+          const defRate = LABOR_DEFAULT_RATES[diff];
+          if (defRate) laborRateInput.value = defRate;
+        }
+      });
+
       pieceTypeSelect.addEventListener("change", (e) => {
         state.pieceType = e.target.value;
+        refreshTemplateOptions();
         softUpdateAfterInput();
       });
 
@@ -1565,6 +1649,7 @@
       laborSection.style.display =
         state.mode === "advanced" ? "flex" : "none";
 
+      refreshTemplateOptions();
       render();
     </script>
   </body>
