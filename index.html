@@ -351,8 +351,8 @@
               <button data-mode="advanced">Modo avanzado</button>
             </div>
             <span class="hint">
-              En ambos modos puedes añadir los materiales que quieras. El
-              avanzado añade mano de obra y herramientas técnicas.
+              Básico: rápido y guiado. Avanzado: añade mano de obra y unidades
+              técnicas.
             </span>
           </div>
         </div>
@@ -361,6 +361,32 @@
           <div class="chip">Peso manual / estimado</div>
           <div class="chip">Detector de sobreprecio</div>
         </div>
+      </div>
+
+      <!-- Ficha de pieza (marca / tipo / modelo) -->
+      <div class="row" id="pieceMetaRow">
+        <label class="hint" style="flex: 1 1 160px;">
+          Tipo de pieza:
+          <select id="pieceTypeSelect">
+            <option value="">— Seleccionar —</option>
+            <option value="anillo">Anillo</option>
+            <option value="alianza">Alianza</option>
+            <option value="pendientes">Pendientes</option>
+            <option value="collar">Collar</option>
+            <option value="cadena">Cadena</option>
+            <option value="pulsera">Pulsera</option>
+            <option value="reloj">Reloj</option>
+            <option value="otro">Otro</option>
+          </select>
+        </label>
+        <label class="hint" style="flex: 1 1 160px;">
+          Marca:
+          <input id="brandInput" type="text" placeholder="Cartier, Rolex..." />
+        </label>
+        <label class="hint" style="flex: 1 1 160px;">
+          Modelo / referencia:
+          <input id="modelInput" type="text" placeholder="Ref. interna..." />
+        </label>
       </div>
 
       <!-- Barra de opciones globales -->
@@ -430,18 +456,36 @@
         class="row"
         style="margin-top: 0.75rem; display: none;"
       >
-        <span class="hint">
-          Mano de obra (solo avanzado): añade un coste global de trabajo,
-          engastado, acabados, etc.
+        <span class="hint" style="flex-basis: 100%;">
+          Mano de obra (solo avanzado): añade el trabajo (engastado, ensamblado,
+          acabados...) como una línea más.
         </span>
-        <label class="hint">
-          Mano de obra estimada (en divisa):
+        <label class="hint" style="flex: 1 1 120px;">
+          Dificultad:
+          <select id="laborDifficultySelect">
+            <option value="sencilla">Sencilla</option>
+            <option value="media" selected>Media</option>
+            <option value="compleja">Compleja</option>
+          </select>
+        </label>
+        <label class="hint" style="flex: 1 1 120px;">
+          Tarifa mano de obra (€/h):
           <input
-            id="laborCostInput"
+            id="laborRateInput"
             type="number"
-            step="0.01"
+            step="1"
             min="0"
-            placeholder="0.00"
+            placeholder="50"
+          />
+        </label>
+        <label class="hint" style="flex: 1 1 120px;">
+          Horas estimadas:
+          <input
+            id="laborHoursInput"
+            type="number"
+            step="0.1"
+            min="0"
+            placeholder="1.0"
           />
         </label>
         <button class="btn btn-ghost" id="addLaborBtn">
@@ -600,6 +644,9 @@
       const state = {
         mode: "basic", // "basic" | "advanced"
         currency: "EUR",
+        pieceType: "",
+        brand: "",
+        model: "",
         lines: [],
         nextId: 1,
         snapshots: [],
@@ -629,8 +676,15 @@
       const dimCancelBtn = document.getElementById("dimCancelBtn");
       const dimApplyBtn = document.getElementById("dimApplyBtn");
       const laborSection = document.getElementById("laborSection");
-      const laborCostInput = document.getElementById("laborCostInput");
+      const laborDifficultySelect = document.getElementById(
+        "laborDifficultySelect"
+      );
+      const laborRateInput = document.getElementById("laborRateInput");
+      const laborHoursInput = document.getElementById("laborHoursInput");
       const addLaborBtn = document.getElementById("addLaborBtn");
+      const pieceTypeSelect = document.getElementById("pieceTypeSelect");
+      const brandInput = document.getElementById("brandInput");
+      const modelInput = document.getElementById("modelInput");
 
       // ==============================
       // UTILIDADES
@@ -652,8 +706,6 @@
           peso: "",
           costeUnitario: "",
           costeTotal: 0,
-          margen: 0,
-          margenPctCoste: 0,
           pesoEstimado: false,
           ...overrides
         };
@@ -716,6 +768,9 @@
         const payload = {
           mode: state.mode,
           currency: state.currency,
+          pieceType: state.pieceType,
+          brand: state.brand,
+          model: state.model,
           lines: state.lines,
           nextId: state.nextId,
           salePriceTotal: state.salePriceTotal
@@ -733,6 +788,9 @@
           if (!data || !Array.isArray(data.lines)) return false;
           state.mode = data.mode || "basic";
           state.currency = data.currency || "EUR";
+          state.pieceType = data.pieceType || "";
+          state.brand = data.brand || "";
+          state.model = data.model || "";
           state.lines = data.lines;
           state.nextId = data.nextId || state.lines.length + 1;
           state.salePriceTotal = data.salePriceTotal || "";
@@ -750,6 +808,9 @@
           data: {
             mode: state.mode,
             currency: state.currency,
+            pieceType: state.pieceType,
+            brand: state.brand,
+            model: state.model,
             lines: state.lines,
             nextId: state.nextId,
             salePriceTotal: state.salePriceTotal
@@ -810,10 +871,18 @@
         if (!snap) return;
         state.mode = snap.data.mode || "basic";
         state.currency = snap.data.currency || "EUR";
+        state.pieceType = snap.data.pieceType || "";
+        state.brand = snap.data.brand || "";
+        state.model = snap.data.model || "";
         state.lines = snap.data.lines || [];
         state.nextId = snap.data.nextId || state.lines.length + 1;
         state.salePriceTotal = snap.data.salePriceTotal || "";
+
         currencySelect.value = state.currency;
+        pieceTypeSelect.value = state.pieceType;
+        brandInput.value = state.brand;
+        modelInput.value = state.model;
+
         modeToggle.querySelectorAll("button").forEach((btn) => {
           const m = btn.getAttribute("data-mode");
           btn.classList.toggle("active", m === state.mode);
@@ -835,7 +904,6 @@
       }
 
       function softUpdateAfterInput() {
-        // Para inputs de texto/número: no re-dibujamos la tabla para no perder foco.
         recalcAll();
         renderSummary();
         updateDiagnostic();
@@ -892,13 +960,12 @@
           selTipo.value = line.tipo;
           const master = getMasterFor(line.material);
           if (master) {
-            // Para materiales conocidos, el tipo está fijado
             selTipo.disabled = true;
           } else {
             selTipo.disabled = false;
           }
           selTipo.addEventListener("change", (e) => {
-            if (getMasterFor(line.material)) return; // por seguridad
+            if (getMasterFor(line.material)) return;
             line.tipo = e.target.value;
             if (line.tipo === "metal" && line.unidad === "€/ct") {
               line.unidad = "€/g";
@@ -917,12 +984,19 @@
           // Unidad
           const tdUnidad = document.createElement("td");
           const selUnidad = document.createElement("select");
-          ["€/g", "€/ct", "€/dwt", "€/ozt", "€/ud"].forEach((u) => {
+          const unitsBasic = ["€/g", "€/ct", "€/ud"];
+          const unitsAdvanced = ["€/g", "€/ct", "€/dwt", "€/ozt", "€/ud"];
+          const units =
+            state.mode === "basic" ? unitsBasic : unitsAdvanced;
+          units.forEach((u) => {
             const opt = document.createElement("option");
             opt.value = u;
             opt.textContent = u;
             selUnidad.appendChild(opt);
           });
+          if (!units.includes(line.unidad)) {
+            line.unidad = units[0];
+          }
           selUnidad.value = line.unidad;
           selUnidad.addEventListener("change", (e) => {
             line.unidad = e.target.value;
@@ -944,7 +1018,7 @@
             "Peso en la unidad indicada. Si se rellena desde dimensiones, se marcará como estimado.";
           inpPeso.addEventListener("input", (e) => {
             line.peso = e.target.value;
-            line.pesoEstimado = false; // si lo escribe a mano, pasa a manual
+            line.pesoEstimado = false;
             softUpdateAfterInput();
           });
           tdPeso.appendChild(inpPeso);
@@ -978,22 +1052,26 @@
 
           // Origen peso
           const tdOrigen = document.createElement("td");
-          const selOrigen = document.createElement("select");
-          [
-            { value: "manual", label: "Manual" },
-            { value: "estimado", label: "Estimado" }
-          ].forEach((o) => {
-            const opt = document.createElement("option");
-            opt.value = o.value;
-            opt.textContent = o.label;
-            selOrigen.appendChild(opt);
-          });
-          selOrigen.value = line.pesoEstimado ? "estimado" : "manual";
-          selOrigen.addEventListener("change", (e) => {
-            line.pesoEstimado = e.target.value === "estimado";
-            softUpdateAfterInput();
-          });
-          tdOrigen.appendChild(selOrigen);
+          if (state.mode === "basic") {
+            tdOrigen.textContent = line.pesoEstimado ? "Estimado" : "Manual";
+          } else {
+            const selOrigen = document.createElement("select");
+            [
+              { value: "manual", label: "Manual" },
+              { value: "estimado", label: "Estimado" }
+            ].forEach((o) => {
+              const opt = document.createElement("option");
+              opt.value = o.value;
+              opt.textContent = o.label;
+              selOrigen.appendChild(opt);
+            });
+            selOrigen.value = line.pesoEstimado ? "estimado" : "manual";
+            selOrigen.addEventListener("change", (e) => {
+              line.pesoEstimado = e.target.value === "estimado";
+              softUpdateAfterInput();
+            });
+            tdOrigen.appendChild(selOrigen);
+          }
           tr.appendChild(tdOrigen);
 
           // Eliminar
@@ -1034,7 +1112,8 @@
         inputPv.value =
           state.salePriceTotal !== "" ? state.salePriceTotal : "";
         inputPv.style.width = "110px";
-        inputPv.addEventListener("input", (e) => {
+        // Usamos change (no input) para que no se pierda el foco en cada tecla
+        inputPv.addEventListener("change", (e) => {
           state.salePriceTotal = e.target.value;
           softUpdateAfterInput();
         });
@@ -1042,7 +1121,18 @@
         pvItem.appendChild(inputPv);
         summaryBar.appendChild(pvItem);
 
-        // Restantes (solo lectura)
+        // Pieza (tipo / marca / modelo) como recordatorio
+        const metaItem = document.createElement("div");
+        metaItem.className = "summary-item";
+        metaItem.innerHTML =
+          '<span class="summary-label">Pieza:</span>' +
+          '<span class="summary-value">' +
+          (state.pieceType || "—") +
+          (state.brand ? " · " + state.brand : "") +
+          (state.model ? " · " + state.model : "") +
+          "</span>";
+        summaryBar.appendChild(metaItem);
+
         const blocks = [
           {
             label: "Coste total materiales + mano de obra",
@@ -1128,6 +1218,9 @@
 
         rows.push([]);
         rows.push(["RESUMEN"]);
+        rows.push(["Tipo de pieza", state.pieceType]);
+        rows.push(["Marca", state.brand]);
+        rows.push(["Modelo", state.model]);
         rows.push(["Coste total", totalCoste]);
         rows.push(["Precio venta total", salePriceTotal]);
         rows.push(["Margen total", margen]);
@@ -1161,6 +1254,8 @@
         state.nextId = 1;
 
         if (name === "solitario_ligero") {
+          state.pieceType = "anillo";
+          pieceTypeSelect.value = "anillo";
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
@@ -1180,6 +1275,8 @@
             })
           );
         } else if (name === "solitario_potente") {
+          state.pieceType = "anillo";
+          pieceTypeSelect.value = "anillo";
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
@@ -1199,6 +1296,8 @@
             })
           );
         } else if (name === "alianza_fina") {
+          state.pieceType = "alianza";
+          pieceTypeSelect.value = "alianza";
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
@@ -1209,6 +1308,8 @@
             })
           );
         } else if (name === "alianza_ancha") {
+          state.pieceType = "alianza";
+          pieceTypeSelect.value = "alianza";
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
@@ -1219,6 +1320,8 @@
             })
           );
         } else if (name === "cadena_fina") {
+          state.pieceType = "cadena";
+          pieceTypeSelect.value = "cadena";
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
@@ -1229,6 +1332,8 @@
             })
           );
         } else if (name === "cadena_gruesa") {
+          state.pieceType = "cadena";
+          pieceTypeSelect.value = "cadena";
           state.lines.push(
             createEmptyLine({
               material: "Oro 18k",
@@ -1239,6 +1344,8 @@
             })
           );
         } else if (name === "reloj_acero") {
+          state.pieceType = "reloj";
+          pieceTypeSelect.value = "reloj";
           state.lines.push(
             createEmptyLine({
               material: "Acero 316L",
@@ -1343,6 +1450,12 @@
       resetBtn.addEventListener("click", () => {
         if (!confirm("¿Seguro que quieres vaciar todo?")) return;
         state.nextId = 1;
+        state.pieceType = "";
+        state.brand = "";
+        state.model = "";
+        pieceTypeSelect.value = "";
+        brandInput.value = "";
+        modelInput.value = "";
         initStateFresh();
         render();
       });
@@ -1384,23 +1497,48 @@
       });
 
       addLaborBtn.addEventListener("click", () => {
-        const val = parseFloat(laborCostInput.value) || 0;
-        if (!val) {
-          alert("Introduce un coste de mano de obra mayor que 0.");
+        const difficulty = laborDifficultySelect.value;
+        const rate = parseFloat(laborRateInput.value) || 0;
+        const hours = parseFloat(laborHoursInput.value) || 0;
+        if (!rate || !hours) {
+          alert("Introduce una tarifa y unas horas mayores que 0.");
           return;
         }
+        const cost = rate * hours;
+        const labelDiff =
+          difficulty === "sencilla"
+            ? "sencilla"
+            : difficulty === "compleja"
+            ? "compleja"
+            : "media";
         state.lines.push(
           createEmptyLine({
-            material: "Mano de obra",
+            material: `Mano de obra (${labelDiff})`,
             tipo: "mano_obra",
             unidad: "€/ud",
             peso: 1,
-            costeUnitario: val,
+            costeUnitario: cost.toFixed(2),
             pesoEstimado: false
           })
         );
-        laborCostInput.value = "";
+        laborRateInput.value = "";
+        laborHoursInput.value = "";
         render();
+      });
+
+      pieceTypeSelect.addEventListener("change", (e) => {
+        state.pieceType = e.target.value;
+        softUpdateAfterInput();
+      });
+
+      brandInput.addEventListener("input", (e) => {
+        state.brand = e.target.value;
+        softUpdateAfterInput();
+      });
+
+      modelInput.addEventListener("input", (e) => {
+        state.model = e.target.value;
+        softUpdateAfterInput();
       });
 
       // ==============================
@@ -1414,6 +1552,10 @@
         initStateFresh();
       } else {
         currencySelect.value = state.currency;
+        pieceTypeSelect.value = state.pieceType;
+        brandInput.value = state.brand;
+        modelInput.value = state.model;
+
         modeToggle.querySelectorAll("button").forEach((btn) => {
           const m = btn.getAttribute("data-mode");
           btn.classList.toggle("active", m === state.mode);
